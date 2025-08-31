@@ -1,0 +1,542 @@
+
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>하이오더 실시간 견적 사이트 (라이브 업데이트 + 이메일 발송)</title>
+<style>
+  :root{ --bg:#fff; --card:#fff; --muted:#667085; --text:#0b0f19; --accent:#2563eb; --bd:#e5e7eb; --danger:#b91c1c; }
+
+  /* 기본 */
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR;
+    font-size: clamp(13px, 1.6vw, 16px);
+    line-height:1.5;
+  }
+
+  /* 컨테이너: 반응형 폭 */
+  .container{ width:100%; max-width:1200px; margin:0 auto; padding:14px; }
+
+  /* 상단 히어로 */
+  .hero{text-align:center;margin:4px 0 10px}
+  .hero h1{font-size:clamp(20px, 3.2vw, 28px);margin:0;color:var(--accent);font-weight:800}
+  .hero .sub{margin:6px 0 0;color:#667085;font-size:clamp(12px, 1.4vw, 14px)}
+  .hero .team{margin-top:4px;color:#374151;font-size:clamp(12px, 1.4vw, 14px);font-weight:600}
+
+  /* 카드 공통 */
+  .card{background:var(--card); border:1px solid var(--bd); border-radius:14px; padding:12px; margin-top:12px; width:100%}
+  .card h3{margin:0 0 8px; font-size:clamp(16px, 2.2vw, 20px); display:flex; justify-content:space-between; align-items:center}
+  .badge{border:1px solid #c7d2fe;background:#eef2ff;color:#1f2937;border-radius:999px;padding:4px 8px;font-size:clamp(11px, 1.6vw, 12px)}
+
+  /* 행/입력 */
+  .row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--bd)}
+  .row:last-child{border-bottom:0}
+  label{min-width:auto;flex:1}
+  input[type=number],input[type=text],input[type=tel],input[type=email],textarea{
+    background:#fff;border:1px solid #d1d5db;border-radius:10px;color:var(--text);
+    padding:10px 12px;font-size:clamp(14px, 1.8vw, 15px);width:100%
+  }
+  input[type=number]{max-width:140px}
+  textarea{width:100%;min-height:90px}
+  .muted{color:#6b7280;font-size:clamp(11px, 1.5vw, 12px)}
+
+  /* 체크 그리드 (거치대) */
+  .grid-checks{display:grid;grid-template-columns:1fr;gap:8px}
+  .check-item{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .check-item input[type=number]{width:70px}
+
+  /* 버튼 */
+  .btn{border:none;border-radius:10px;padding:12px 10px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;line-height:1.2;font-size:13px}
+  .btn.blue{background:var(--accent);color:#fff}
+  .btn.kakao{background:#FEE500;color:#111}
+  .btn.green{background:#166534;color:#fff}
+  .btn.secondary{background:#fff;border:1px solid var(--bd);color:#0b0f19}
+  a.btn{text-decoration:none}
+  .btnRow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .top-actions{display:flex;justify-content:flex-end;gap:8px}
+
+  /* 표 */
+  .table-wrap{width:100%;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{border-bottom:1px solid var(--bd);padding:9px 6px;text-align:right;font-size:clamp(12px, 1.6vw, 13px)}
+  th:first-child,td:first-child{text-align:left}
+  tfoot td{font-weight:800}
+  #tdMonthly,#tdMonthlyLabel{color:var(--accent);font-weight:900;font-size:clamp(14px, 2vw, 16px)}
+
+  .danger{color:var(--danger);font-weight:800}
+  .two-col{display:grid;grid-template-columns:1fr;gap:10px}
+
+  /* 반응형 분기 */
+  @media (min-width:480px){ .grid-checks{grid-template-columns: repeat(2,1fr);} }
+  @media (min-width:768px){
+    .two-col{grid-template-columns:1fr 1fr}
+    .grid-checks{grid-template-columns: repeat(3,1fr);}
+  }
+  @media (min-width:1024px){ .container{max-width:960px} }
+  @media (min-width:1280px){ .container{max-width:1200px} }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>하이오더 실시간 견적 사이트</h1>
+      <p class="sub">모바일 최적화 · 수량 입력 즉시 합계 갱신</p>
+      <p class="sub">· 초기 설치비 면제(할인) 자동 반영</p>
+      <p class="team">
+        <span style="color:#4c00ff">KT 동부소상공인 영업팀 대구프론티어센터</span><br>
+        <span style="color:#000000"><b>견적서 관리 : 김영훈 과장 010-8290-9971</b></span>
+      </p>
+    </div>
+
+    <div class="top-actions">
+      <button class="btn secondary" id="btnReset">견적 초기화</button>
+    </div>
+
+    <!-- 1) 결제 유형 -->
+    <div class="card">
+      <h3><span style="color:#17ab21"><b>결제 유형</b></span></h3>
+      <div class="row">
+        <label><input type="radio" name="paytype" value="후불" checked> 후불형</label>
+      </div>
+      <div class="row">
+        <label><input type="radio" name="paytype" value="선불"> 선불형</label>
+        <p class="muted" style="margin:4px 0 0 20px">(+월 2,000원 / 일시불 +67,600원)</p>
+      </div>
+    </div>
+
+    <!-- 2) 메뉴판 -->
+    <div class="card" id="cardMenu">
+      <h3>
+        <div style="display:flex; flex-direction:column;">
+          <span><span style="color:#17ab21"><b>메뉴판</b></span></span>
+          <span class="badge">메뉴판 서비스이용료 <span id="badgeMenuSvcCnt">0</span>대 (월 15,000원/대)</span>
+        </div>
+      </h3>
+
+      <!-- 단말 수량 -->
+      <div class="row">
+        <label>
+          <div>하이오더 1</div>
+          <div class="muted">(3년 약정 기준 월 3,000원 <br>/ 일시불 108,000원)</div>
+        </label>
+        <input id="q_h1" class="qty" type="number" min="0" value="0">
+      </div>
+      <div class="row">
+        <label>
+          <div>하이오더 2</div>
+          <div class="muted">(3년 약정 기준 월 5,000원 <br>/ 일시불 170,000원)</div>
+        </label>
+        <input id="q_h2" class="qty" type="number" min="0" value="0">
+      </div>
+
+      <!-- 거치대 -->
+      <h4 class="muted" style="margin:8px 0 4px"><b>메뉴판 거치대</b></h4>
+      <div class="grid-checks" id="menuMounts">
+        <label class="check-item"><span>스탠드형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
+        <label class="check-item"><span>스탠드고정형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
+        <label class="check-item"><span>탁상형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
+        <label class="check-item"><span>탁상형2</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
+        <label class="check-item"><span>벽걸이고정형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
+        <label class="check-item"><span>벽걸이회전형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
+        <label class="check-item"><span>아일랜드</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
+      </div>
+
+      <p class="muted">※ 1개 체크 시 메뉴판 총 수량 전량자동입력, 2개 이상 체크 시 자동 균등배분 후 자유롭게 ± 조정 (합계 유지)</p>
+    </div>
+
+    <!-- 3) 알림판 -->
+    <div class="card" id="cardSign">
+      <h3>
+        <div style="display:flex; flex-direction:column;">
+          <span><span style="color:#18aa22"><b>알림판</b></span></span>
+          <span class="badge">알림판 서비스이용료 <span id="badgeSignSvcCnt">0</span>대 (월 15,000원/대)</span>
+        </div>
+      </h3>
+      <div class="row"><label><div>10인치(하이오더1)</div><div class="muted">(3년 약정 기준 월 3,000원 <br>/ 일시불 108,000원)</div></label><input id="q_s10_h1" class="qty" type="number" min="0" value="0"></div>
+      <div class="row"><label><div>10인치(하이오더2)</div><div class="muted">(3년 약정 기준 월 5,000원 <br>/ 일시불 170,000원)</div></label><input id="q_s10_h2" class="qty" type="number" min="0" value="0"></div>
+      <div class="row"><label><div>15인치 알림판</div><div class="muted">(3년 약정 기준 월 7,000원 <br>/ 일시불 237,000원)</div></label><input id="q_s15" class="qty" type="number" min="0" value="0"></div>
+
+      <h4 class="muted" style="margin:8px 0 4px"><b>알림판 거치대</b></h4>
+      <div class="grid-checks" id="signMounts">
+        <label class="check-item"><span>스탠드형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
+        <label class="check-item"><span>스탠드고정형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
+        <label class="check-item"><span>탁상형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
+        <label class="check-item"><span>탁상형2</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
+        <label class="check-item"><span>벽걸이고정형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
+        <label class="check-item"><span>벽걸이회전형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
+        <label class="check-item"><span>아일랜드</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
+      </div>
+      <p class="muted" style="text-align:center">※ 1개 체크 시 알림판 총 수량 전량자동입력,<br>2개 이상 체크 시 자동 균등배분 후 <br>자유롭게 ± 조정 (합계 유지)</p>
+    </div>
+
+    <!-- 4) 부자재 및 설치비 (할인 대상) -->
+    <div class="card">
+      <h3><span style="color:#19ae23"><b>부자재 및 설치비</b></span></h3>
+      <div class="row"><label>설치비용 <br><span class="muted">(260,000원/건)</span></label><input id="q_install" type="number" readonly value="0"></div>
+      <div class="row"><label>상시전원 <br><span class="muted">(48,500원/대)</span></label><input id="q_batt_main" type="number" min="0" value="0"></div>
+      <div class="row"><label>보조배터리 <br><span class="muted">(48,500원/대)</span></label><input id="q_batt_portable" type="number" min="0" value="0"></div>
+      <div class="row"><label>부자재 <br><span class="muted">(17,000원/대)</span></label><input id="q_parts" type="number" readonly value="0"></div>
+      <div class="row"><label>와이파이 AP<br><span class="muted">(100,000원)</span></label><input id="q_ap" type="number" value="1" readonly></div>
+      <div class="row"><label>증폭기<br><span class="muted">(97,000원)</span></label><input id="q_amp" type="number" value="1" readonly></div>
+      <p class="muted" style="text-align:center"><br>※ 위 5개 품목은 <b>초기 설치비 면제(할인)</b> 대상이며 요약표 합계는 0원으로 표시됩니다. <br>할인 금액은 ‘할인 금액 합계’에 반영됩니다.</p>
+    </div>
+
+    <!-- 5) 견적 요약 -->
+    <div class="card">
+      <h3><span style="color:#18b423"><b>견적 요약</b></span></h3>
+      <div class="table-wrap">
+        <table class="summary-table">
+          <thead>
+            <tr><th>품목</th><th>단가</th><th>수량</th><th>공급가</th><th>세액</th><th>합계(VAT포함)</th></tr>
+          </thead>
+          <tbody id="tbodyLines">
+            <tr><td colspan="6" style="text-align:center;color:#6b7280">수량을 입력하면 자동으로 계산됩니다.</td></tr>
+          </tbody>
+          <tfoot>
+            <tr><td id="tdMonthlyLabel">월이용료합계<br>VAT포함</td><td colspan="4"></td><td id="tdMonthly">0</td></tr>
+            <tr><td>일시불<br>합계</td><td colspan="4"></td><td id="tdOnetime">0</td></tr>
+            <tr><td>할인금액<br>합계</td><td colspan="4"></td><td id="tdDiscount">- 0</td></tr>
+            <tr><td>총 합계<br>월일시불-할인</td><td colspan="4"></td><td id="tdGrand">0</td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- 6) 위약금 계산 (항상 접힘) -->
+    <div class="card">
+      <details>
+        <summary><span style="color:#18b423"><b>위약금 계산</b></span></summary>
+        <div class="row"><label>무약정요금</label><input id="p_no_contract" type="number" value="21000"></div>
+        <div class="row"><label>재약정요금</label><input id="p_recontract" type="number" value="15000"></div>
+        <div class="row"><label>서비스이용료</label><input id="p_service_fee" type="number" value="15000"></div>
+        <div class="row"><label>미이용 개월수</label><input id="p_unused_months" type="number" value="0" readonly></div>
+        <div class="row"><label class="danger">잔여개월수</label><input id="p_remaining_months" type="number" value="0" style="color:#b91c1c;font-weight:800"></div>
+        <div class="row"><label>할인반환금</label><input id="p_refund" type="number" value="0" readonly></div>
+        <div class="row"><label class="danger">예상 위약금</label><input id="p_penalty" type="number" value="0" readonly style="color:#b91c1c;font-weight:800"></div>
+      </details>
+    </div>
+
+    <!-- 7) 약관 & 신청자 정보 + 버튼 3종 -->
+    <div class="card">
+      <div class="row">
+        <label class="badge" style="background:#dbeafe;border-color:#bfdbfe;color:#1e40af">
+          <input id="agree_all" type="checkbox"> 전체이용약관동의(필수)
+        </label>
+      </div>
+      <div class="two-col">
+        <div>
+          <div class="row"><label>이름</label><input id="cust_name" type="text"></div>
+          <div class="row"><label>전화번호</label><input id="cust_phone" type="tel"></div>
+          <div class="row"><label>이메일주소</label><input id="inEmail" type="email"></div>
+          <div class="row"><label>요청/문의사항</label><textarea id="cust_note">통화가능시간, 궁금하신점을 적어주세요</textarea></div>
+        </div>
+      </div>
+
+      <details class="muted" style="margin-top:8px">
+        <summary>전체이용약관 열기</summary>
+        <div style="white-space:pre-wrap; font-size:12px; color:#475467; margin-top:6px">
+[필수] 전화상담 신청 동의서
+[필수] 고객정보 수집 및 이용 동의
+고객님이 입력한 개인정보는 ‘정보통신망 이용 촉진 및 정보보호 등에 관한 법률’에 따라 KT가 수집, 이용 및 처리 위탁 시 본인의 동의를 얻어야 하는 정보입니다. 입력하신 개인정보는 아래의 목적으로 관련 업체에만 제공되며, 이외의 목적으로는 활용되지 않습니다.
+
+본 전화 상담 요청 고객은 개인정보 수집·이용 및 처리 위탁에 대하여 동의를 거부할 권리가 있으며, 미동의 시 전화상담 신청을 하실 수 없습니다.
+
+개인정보 수집 및 이용 목적  |  상품 신청 및 상담
+수집하는 개인정보 항목     |  고객명, 전화번호(연락처)
+개인정보 보유 및 이용기간   |  상담 요청일로부터 6개월까지 보관/이용 후 파기(단, 관계법령에 따라 보관 가능)
+        </div>
+      </details>
+
+      <div class="btnRow" style="margin-top:10px">
+        <button class="btn blue" id="btnEmail">견적서<br>신청하고<br>추가혜택<br>안내받기</button>
+        <a class="btn kakao" href="http://pf.kakao.com/_xaXbrn" target="_blank">카카오채널 <br>추가하고<br>실시간채팅<br>상담받기</a>
+        <a class="btn green" href="http://kt-mns.com" target="_blank">KT<br>소상공인<br>홈페이지<br>방문하기</a>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const nkr=n=>Number(n||0).toLocaleString('ko-KR');
+  const num=id=>{const el=$(id); return el?Number(el.value||0):0};
+  const setNum=(id,v)=>{const el=$(id); if(el) el.value=Number(v||0)};
+  const TAX=0.1;
+
+  const PRICE={
+    monthly:{ h1:3000, h2:5000, s10_h1:3000, s10_h2:5000, s15:7000, menuSvc:15000, signSvc:15000 },
+    onetime:{ h1:108000, h2:170000, s10_h1:108000, s10_h2:170000, s15:237000, install:260000, battery:48500, parts:17000, ap:100000, amp:97000 }
+  };
+  const isPrepay=()=> (document.querySelector('input[name="paytype"]:checked')?.value==='선불');
+  const mPrice=(code)=>{ let v=PRICE.monthly[code]||0; if(isPrepay() && (code==='h1'||code==='h2')) v+=2000; return v; };
+  const oPrice=(code)=>{ let v=PRICE.onetime[code]||0; if(isPrepay() && (code==='h1'||code==='h2')) v+=67600; return v; };
+
+  // ====== 거치대 헬퍼 ======
+  function sectionTotal(section){
+    if(section==='menu') return num('q_h1')+num('q_h2');
+    if(section==='sign') return num('q_s10_h1')+num('q_s10_h2')+num('q_s15');
+    return 0;
+  }
+  function rows(section){
+    const box = (section==='menu'? $('menuMounts') : $('signMounts'));
+    return box ? Array.from(box.querySelectorAll('.check-item')) : [];
+  }
+  function checkedRows(section){ return rows(section).filter(r=> r.querySelector('.mount-check')?.checked); }
+  function sumQty(section){ return rows(section).reduce((s,r)=> s + Number(r.querySelector('.mount-qty').value||0), 0); }
+
+  // 핵심: 자동 체크/자동 분배
+  function distribute(section, autoCheck=false){
+    const total=sectionTotal(section);
+    const allRows = rows(section);
+    let list = checkedRows(section);
+
+    // 단말 수량만 바꿨고 체크 0개면 첫 항목 자동 체크
+    if(autoCheck && total>0 && list.length===0 && allRows.length>0){
+      const firstCb = allRows[0].querySelector('.mount-check');
+      if(firstCb){ firstCb.checked = true; }
+      list = checkedRows(section);
+    }
+
+    // 체크가 0개면 전부 0
+    if(list.length===0){
+      allRows.forEach(r=> r.querySelector('.mount-qty').value=0);
+      return;
+    }
+
+    // 체크 1개 = 전량
+    if(list.length===1){
+      allRows.forEach(r=>{ if(!r.querySelector('.mount-check').checked) r.querySelector('.mount-qty').value=0; });
+      list[0].querySelector('.mount-qty').value=total;
+      return;
+    }
+
+    // 2개 이상 = 균등 + 나머지 1씩
+    const base=Math.floor(total/list.length); let rem=total-base*list.length;
+    allRows.forEach(r=>{ if(!r.querySelector('.mount-check').checked) r.querySelector('.mount-qty').value=0; });
+    list.forEach(r=> r.querySelector('.mount-qty').value=base);
+    for(let i=0;i<list.length && rem>0;i++,rem--){
+      const inp=list[i].querySelector('.mount-qty'); inp.value=Number(inp.value)+1;
+    }
+  }
+
+  function rebalance(section,changed){
+    const total=sectionTotal(section);
+    const list=checkedRows(section);
+    if(list.length===0){ distribute(section, false); return; }
+
+    list.forEach(r=>{ const inp=r.querySelector('.mount-qty'); if(Number(inp.value)<0) inp.value=0; });
+    let cur=sumQty(section); if(cur===total) return;
+
+    const others=list.map(r=> r.querySelector('.mount-qty'));
+    const i=others.indexOf(changed); if(i>=0) others.splice(i,1);
+    if(others.length===0){ changed.value=total; return; }
+
+    if(cur>total){
+      let diff=cur-total;
+      for(const inp of others){
+        const can=Math.min(diff, Number(inp.value));
+        inp.value=Number(inp.value)-can; diff-=can; if(diff<=0) break;
+      }
+    }else{
+      let diff=total-cur, k=0;
+      while(diff>0){ const inp=others[k%others.length]; inp.value=Number(inp.value)+1; diff--; k++; }
+    }
+  }
+
+  // ====== 서비스/부자재 동기화 ======
+  function syncByTotals(){
+    const mTot=sectionTotal('menu'); const sTot=sectionTotal('sign');
+    $('badgeMenuSvcCnt').textContent=mTot; $('badgeSignSvcCnt').textContent=sTot;
+
+    // 설치비/부자재는 전체 대수와 동일
+    setNum('q_install', mTot+sTot); setNum('q_parts', mTot+sTot);
+
+    // 배터리 합이 전체와 동일하도록 자동 맞춤
+    const all=mTot+sTot; const m=num('q_batt_main'); const p=num('q_batt_portable');
+    if(m+p!==all){
+      const act=document.activeElement?.id;
+      if(act==='q_batt_portable') setNum('q_batt_main',Math.max(0,all-p));
+      else setNum('q_batt_portable',Math.max(0,all-m));
+    }
+  }
+
+  // ====== 요약 표 렌더 ======
+  function addLine(tbody, name, unit, qty, discount=false){
+    const q=Number(qty||0); if(!q) return 0;
+    const u=Number(unit||0); const supply=u*q; const tax=Math.round(supply*TAX); const total=supply+tax;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${name}${discount? ' <span class="muted">(할인)</span>':''}</td><td>${nkr(u)}</td><td>${q}</td><td>${nkr(supply)}</td><td>${nkr(tax)}</td><td>${discount? '0' : nkr(total)}</td>`;
+    tbody.appendChild(tr);
+    return total;
+  }
+
+  function render(){
+    syncByTotals();
+    const tbody=$('tbodyLines'); tbody.innerHTML='';
+    let monthly=0, onetime=0, discount=0;
+
+    const h1=num('q_h1'), h2=num('q_h2');
+    const s10h1=num('q_s10_h1'), s10h2=num('q_s10_h2'), s15=num('q_s15');
+
+    // 월 과금 (장비 + 서비스 이용료)
+    monthly+=addLine(tbody,'하이오더 1 (3년)', mPrice('h1'), h1);
+    monthly+=addLine(tbody,'하이오더 2 (3년)', mPrice('h2'), h2);
+    monthly+=addLine(tbody,'알림판 10인치 (하이오더1, 3년)', mPrice('s10_h1'), s10h1);
+    monthly+=addLine(tbody,'알림판 10인치 (하이오더2, 3년)', mPrice('s10_h2'), s10h2);
+    monthly+=addLine(tbody,'알림판 15인치 (3년)', mPrice('s15'), s15);
+    monthly+=addLine(tbody,'메뉴판 서비스이용료', mPrice('menuSvc'), h1+h2);
+    monthly+=addLine(tbody,'알림판 서비스이용료', mPrice('signSvc'), s10h1+s10h2+s15);
+
+    // 일시불 (장비)
+    onetime+=addLine(tbody,'하이오더 1 (일시불)', oPrice('h1'), h1);
+    onetime+=addLine(tbody,'하이오더 2 (일시불)', oPrice('h2'), h2);
+    onetime+=addLine(tbody,'알림판 10인치 (하이오더1, 일시불)', oPrice('s10_h1'), s10h1);
+    onetime+=addLine(tbody,'알림판 10인치 (하이오더2, 일시불)', oPrice('s10_h2'), s10h2);
+    onetime+=addLine(tbody,'알림판 15인치 (일시불)', oPrice('s15'), s15);
+
+    // 할인 대상(초기 설치비 면제)
+    const inst = addLine(tbody,'설치비용', oPrice('install'), num('q_install'), true);
+    const batt = addLine(tbody,'배터리', oPrice('battery'), num('q_batt_main')+num('q_batt_portable'), true);
+    const parts= addLine(tbody,'부자재', oPrice('parts'), num('q_parts'), true);
+    const ap   = addLine(tbody,'와이파이 AP', oPrice('ap'), num('q_ap'), true);
+    const amp  = addLine(tbody,'증폭기', oPrice('amp'), num('q_amp'), true);
+    onetime += inst + batt + parts + ap + amp;
+    discount += inst + batt + parts + ap + amp;
+
+    $('tdMonthly').textContent=nkr(monthly);
+    $('tdOnetime').textContent=nkr(onetime);
+    $('tdDiscount').textContent='- '+nkr(discount);
+    $('tdGrand').textContent=nkr(Math.max(0, monthly + onetime - discount));
+  }
+
+  // === Make Webhook으로 전송 ===
+  const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/12nbyh6gcmb7z1b1f5viuhwnmnmizlxk";
+
+  function gatherMounts(section){
+    return rows(section).map(r=>{
+      const name = r.querySelector('span')?.textContent?.trim() || '';
+      const checked = r.querySelector('.mount-check')?.checked || false;
+      const qty = Number(r.querySelector('.mount-qty')?.value || 0);
+      return { name, checked, qty };
+    });
+  }
+
+  function buildPayload(){
+    // 현재 합계 최신화를 보장
+    render();
+
+    const payload = {
+      timestamp: new Date().toISOString(),
+      paytype: document.querySelector('input[name="paytype"]:checked')?.value || '후불',
+      customer: {
+        name: $('cust_name').value.trim(),
+        phone: $('cust_phone').value.trim(),
+        email: $('inEmail').value.trim(),
+        note: $('cust_note').value.trim()
+      },
+      qty: {
+        menu: { h1: num('q_h1'), h2: num('q_h2') },
+        sign: { s10_h1: num('q_s10_h1'), s10_h2: num('q_s10_h2'), s15: num('q_s15') }
+      },
+      mounts: {
+        menu: gatherMounts('menu'),
+        sign: gatherMounts('sign')
+      },
+      fees: {
+        monthly: $('tdMonthly').textContent,
+        onetime: $('tdOnetime').textContent,
+        discount: $('tdDiscount').textContent,
+        grand: $('tdGrand').textContent
+      }
+    };
+    return payload;
+  }
+
+  async function sendToMake(){
+    if(!$('agree_all').checked){ alert('이용약관에 동의해 주세요.'); return; }
+    if(!$('cust_name').value.trim()){ alert('이름을 입력해 주세요.'); return; }
+    if(!$('cust_phone').value.trim()){ alert('전화번호를 입력해 주세요.'); return; }
+    if(!$('inEmail').value.trim()){ alert('이메일을 입력해 주세요.'); return; }
+
+    const btn = $('btnEmail');
+    const old = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '전송 중...';
+
+    try{
+      const res = await fetch(MAKE_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildPayload())
+      });
+      if(!res.ok) throw new Error('Webhook 응답 오류: '+res.status);
+      alert('신청이 접수되었습니다. 담당자가 곧 연락드립니다.');
+    }catch(err){
+      console.error(err);
+      alert('전송 실패. 잠시 후 다시 시도해 주세요.');
+    }finally{
+      btn.disabled = false; btn.innerHTML = old;
+    }
+  }
+
+  // ====== 이벤트 바인딩 ======
+  function wire(){
+    // 수량 입력 시: 자동체크+분배(autoCheck=true) → 렌더
+    ['q_h1','q_h2','q_s10_h1','q_s10_h2','q_s15','q_batt_main','q_batt_portable']
+      .forEach(id=>{
+        const el=$(id);
+        if(el) el.addEventListener('input', ()=>{
+          distribute('menu', true);
+          distribute('sign', true);
+          render();
+        });
+      });
+
+    // 결제유형 변경 시 요금 재계산
+    document.querySelectorAll('input[name="paytype"]').forEach(r=> r.addEventListener('change', render));
+
+    // 거치대 체크박스/수량 변화 처리
+    function bindMount(section){
+      rows(section).forEach(row=>{
+        const cb=row.querySelector('.mount-check');
+        const qty=row.querySelector('.mount-qty');
+        cb.addEventListener('change', ()=>{ distribute(section, false); render(); });
+        qty.addEventListener('input', ()=>{ rebalance(section, qty); render(); });
+      });
+    }
+    bindMount('menu'); bindMount('sign');
+
+    // 초기화
+    $('btnReset').addEventListener('click', ()=>{
+      document.querySelectorAll('input[type=number]').forEach(i=>{ if(!i.readOnly) i.value = 0; });
+      document.querySelector('input[name="paytype"][value="후불"]').checked = true;
+      ['menu','sign'].forEach(sec=> rows(sec).forEach(r=>{
+        r.querySelector('.mount-check').checked=false;
+        r.querySelector('.mount-qty').value=0;
+      }));
+      render();
+    });
+
+    // Webhook 전송 버튼
+    $('btnEmail').addEventListener('click', sendToMake);
+
+    // Enter로도 전송(신청자 입력 칸에서)
+    ['cust_name','cust_phone','inEmail','cust_note'].forEach(id=>{
+      const el=$(id); if(!el) return;
+      el.addEventListener('keydown', e=>{
+        if(e.key==='Enter' && (id!=='cust_note')){ e.preventDefault(); sendToMake(); }
+      });
+    });
+
+    // 최초 렌더
+    render();
+  }
+
+  document.addEventListener('DOMContentLoaded', wire);
+})();
+</script>
+</body>
+</html>
