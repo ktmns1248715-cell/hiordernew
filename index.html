@@ -538,5 +538,49 @@
   document.addEventListener('DOMContentLoaded', wire);
 })();
 </script>
+      document.addEventListener('DOMContentLoaded', wire);
+})();
+</script>
+
+<!-- ✅ 여기 추가 -->
+<script>
+document.getElementById("btnEmail").addEventListener("click", async ()=>{
+  if(!document.getElementById("agree_all").checked){
+    alert("전체이용약관에 동의해야 신청 가능합니다.");
+    return;
+  }
+
+  const payload = {
+    name: document.getElementById("cust_name").value,
+    phone: document.getElementById("cust_phone").value,
+    email: document.getElementById("inEmail").value,
+    note: document.getElementById("cust_note").value,
+    monthly: document.getElementById("tdMonthly").innerText,
+    onetime: document.getElementById("tdOnetime").innerText,
+    discount: document.getElementById("tdDiscount").innerText,
+    grand: document.getElementById("tdGrand").innerText
+  };
+
+  try {
+    const res = await fetch("https://hook.eu2.make.com/12nbyh6gcmb7z1b1f5viuhwnmnmizlxk", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
+    });
+    if(res.ok){
+      alert("견적서 신청이 완료되었습니다! 빠른 시일 내 연락드리겠습니다.");
+    }else{
+      alert("전송 중 오류가 발생했습니다.");
+    }
+  } catch(e){
+    alert("서버 연결 실패: "+e);
+  }
+});
+</script>
+<!-- ✅ 여기까지 -->
+
+</body>
+</html>
+
 </body>
 </html>
