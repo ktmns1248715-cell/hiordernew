@@ -1,435 +1,616 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>하이오더 실시간 견적 사이트 (라이브 업데이트 + 이메일 발송)</title>
+<meta charset="UTF-8">
+<title>하이오더 상품 견적서</title>
+<!-- html2canvas 라이브러리 추가 (이미지 저장 기능용) -->
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <style>
-  :root{ --bg:#fff; --card:#fff; --muted:#667085; --text:#0b0f19; --accent:#2563eb; --bd:#e5e7eb; --danger:#b91c1c; }
-
-  html,body{height:100%}
-  body{
-    margin:0;background:var(--bg);color:var(--text);
-    font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR;
-    font-size: clamp(13px, 1.6vw, 16px);
-    line-height:1.5;
+  @page { size: A4; margin: 14mm 12mm; background-color: #ffffff; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    color: #222;
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
   }
-  .container{ width:100%; max-width:1200px; margin:0 auto; padding:14px; }
-
-  .hero{text-align:center;margin:4px 0 10px}
-  .hero h1{font-size:clamp(20px, 3.2vw, 28px);margin:0;color:var(--accent);font-weight:800}
-  .hero .sub{margin:6px 0 0;color:#667085;font-size:clamp(12px, 1.4vw, 14px)}
-  .hero .team{margin-top:4px;color:#374151;font-size:clamp(12px, 1.4vw, 14px);font-weight:600}
-
-  .card{background:var(--card); border:1px solid var(--bd); border-radius:14px; padding:12px; margin-top:12px; width:100%}
-  .card h3{margin:0 0 8px; font-size:clamp(16px, 2.2vw, 20px); display:flex; justify-content:space-between; align-items:center}
-  .badge{border:1px solid #c7d2fe;background:#eef2ff;color:#1f2937;border-radius:999px;padding:4px 8px;font-size:clamp(11px, 1.6vw, 12px)}
-
-  .row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--bd)}
-  .row:last-child{border-bottom:0}
-  label{min-width:auto;flex:1}
-  input[type=number],textarea{
-    background:#fff;border:1px solid #d1d5db;border-radius:10px;color:var(--text);
-    padding:10px 12px;font-size:clamp(14px, 1.8vw, 15px);width:100%
+  .page {
+    width: 100%;
+    background: #fff;
+    padding: 0;
   }
-  input[type=number]{max-width:140px}
-  textarea{width:100%;min-height:90px}
-  .muted{color:#6b7280;font-size:clamp(11px, 1.5vw, 12px)}
 
-  .grid-checks{display:grid;grid-template-columns:1fr;gap:8px}
-  .check-item{display:flex;align-items:center;justify-content:space-between;gap:6px}
-  .check-item input[type=number]{width:70px}
-
-  .btn{border:none;border-radius:10px;padding:12px 10px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;line-height:1.2;font-size:13px}
-  .btn.blue{background:var(--accent);color:#fff}
-  .btn.kakao{background:#FEE500;color:#111}
-  .btn.green{background:#166534;color:#fff}
-  .btn.secondary{background:#fff;border:1px solid var(--bd);color:#0b0f19}
-  a.btn{text-decoration:none}
-  .btnRow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .top-actions{display:flex;justify-content:flex-end;gap:8px}
-
-  .table-wrap{width:100%;overflow-x:auto}
-  table{width:100%;border-collapse:collapse;margin-top:8px}
-  th,td{border-bottom:1px solid var(--bd);padding:9px 6px;text-align:right;font-size:clamp(12px, 1.6vw, 13px)}
-  th:first-child,td:first-child{text-align:left}
-  tfoot td{font-weight:800}
-  #tdMonthly,#tdMonthlyLabel{color:var(--accent);font-weight:900;font-size:clamp(14px, 2vw, 16px)}
-
-  .danger{color:var(--danger);font-weight:800}
-  .two-col{display:grid;grid-template-columns:1fr;gap:10px}
-
-  @media (min-width:480px){ .grid-checks{grid-template-columns: repeat(2,1fr);} }
-  @media (min-width:768px){
-    .two-col{grid-template-columns:1fr 1fr}
-    .grid-checks{grid-template-columns: repeat(3,1fr);}
+  h1.title {
+    text-align: center;
+    letter-spacing: 16px;
+    font-size: 24px;
+    margin: 0 0 18px 0;
+    font-weight: 700;
   }
-  @media (min-width:1024px){ .container{max-width:960px} }
-  @media (min-width:1280px){ .container{max-width:1200px} }
+
+  .top-info { display: table; width: 100%; margin-bottom: 16px; table-layout: fixed; }
+  .top-info-cell { display: table-cell; width: 50%; vertical-align: top; }
+  .top-info-cell:first-child { padding-right: 5px; }
+  .top-info-cell:last-child { padding-left: 5px; }
+
+  .top-info table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .top-info td { border: 1px solid #999; padding: 5px 8px; height: 32px; }
+  .top-info td.label { background: #f2f2f2; font-weight: 600; width: 35%; white-space: nowrap; text-align: center; }
+  .amount-row td.value { font-weight: 700; color: #c0392b; }
+  .top-info input, .top-info select { width: 100%; border: none; font-size: 12.5px; font-family: inherit; background: transparent; padding: 0; margin: 0; height: 100%; }
+  .top-info input:focus, .top-info select:focus { background: #fff8d6; outline: 1px solid #f1c40f; }
+  .top-info input[readonly] { color: #555; background: #fafafa; }
+  
+  .top-info input[type="date"] {
+    position: relative;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .section-title {
+    background: #2c3e50; color: #fff; padding: 6px 10px; font-size: 13.5px;
+    font-weight: 700; margin-top: 18px; border-radius: 3px 3px 0 0;
+  }
+
+  table.items { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-bottom: 4px; table-layout: fixed; }
+  table.items th, table.items td { border: 1px solid #cfcfcf; padding: 5px 4px; text-align: center; }
+  table.items thead th { background: #ecf0f1; font-weight: 700; height: 28px; }
+  table.items td.item-name { text-align: left; padding-left: 8px; }
+  table.items td.group-label { background: #f8f8f8; font-weight: 700; text-align: left; padding-left: 6px; height: 24px; }
+  table.items input, table.items select {
+    width: 100%; border: none; text-align: center; font-size: 11.5px;
+    background: transparent; font-family: inherit; padding: 0; margin: 0;
+  }
+  table.items input:focus, table.items select:focus { background: #fff8d6; outline: 1px solid #f1c40f; }
+  table.items input[readonly] { color: #555; background: #f5f5f5; }
+  table.items tr.subtotal td { background: #fdf2e9; font-weight: 700; height: 26px; }
+  table.items tr.subtotal td.item-name { text-align: right; padding-right: 10px; }
+
+  .qty-box { display: inline-flex; align-items: center; justify-content: center; width: 100%; gap: 2px; }
+  .qty-box input { width: 35px !important; text-align: center; font-weight: bold; }
+  .qty-btn {
+    width: 18px; height: 18px; font-size: 11px; font-weight: bold;
+    cursor: pointer; border: 1px solid #ccc; background: #fcfcfc;
+    border-radius: 2px; display: inline-flex; align-items: center; justify-content: center;
+    padding: 0; user-select: none;
+  }
+  .qty-btn:hover { background: #eee; }
+  @media print { .qty-btn { display: none !important; } }
+
+  .grand-total { margin-top: 8px; text-align: right; }
+  .grand-total table { border-collapse: collapse; font-size: 13px; margin-left: auto; }
+  .grand-total td { border: 1px solid #999; padding: 8px 16px; }
+  .grand-total td.label { background: #2c3e50; color: #fff; font-weight: 700; }
+  .grand-total td.value { font-weight: 800; font-size: 15px; color: #c0392b; text-align: right; min-width: 120px; }
+
+  .pay-table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 4px; }
+  .pay-table th, .pay-table td { border: 1px solid #cfcfcf; padding: 5px 6px; text-align: center; }
+  .pay-table thead th { background: #ecf0f1; height: 26px; }
+  .pay-table td.item-name { text-align: left; padding-left: 8px; }
+
+  .note-box {
+    margin-top: 14px; font-size: 10.5px; line-height: 1.55;
+    border-top: 1px solid #ccc; padding-top: 8px; color: #555;
+    page-break-inside: avoid;
+  }
+  .note-box .note-title { font-weight: 700; color: #333; margin-bottom: 2px; }
+
+  .toolbar { text-align: center; margin-bottom: 15px; padding: 10px; background: #f5f5f5; border-radius: 4px; }
+  .toolbar button {
+    padding: 8px 18px; font-size: 13px; margin: 0 4px; border: 1px solid #2c3e50;
+    background: #2c3e50; color: #fff; border-radius: 4px; cursor: pointer;
+  }
+  .toolbar button.secondary { background: #fff; color: #2c3e50; }
+  .toolbar button.image-save { background: #27ae60; border-color: #27ae60; }
+  .toolbar button.danger { background: #c0392b; border-color: #c0392b; }
+  @media print { .toolbar { display: none !important; } }
 </style>
 </head>
 <body>
-  <div class="container">
-    <div class="hero">
-      <h1>하이오더 실시간 견적 사이트</h1>
-      <p class="sub">모바일 최적화 · 수량 입력 즉시 합계 갱신</p>
-      <p class="sub">· 초기 설치비 면제(할인) 자동 반영</p>
-      <p class="team">
-        <span style="color:#4c00ff">KT 동부소상공인 영업팀 대구프론티어센터</span><br>
-        <span style="color:#000000"><b>견적서 관리 : 김영훈 과장 010-8290-9971</b></span>
-      </p>
+
+<div class="toolbar">
+  <button class="image-save" onclick="saveAsImage()">🖼 이미지로 저장</button>
+  <button onclick="window.print()">🖨 인쇄 / PDF저장</button>
+  <button class="secondary" onclick="recalcAll()">🔄 합계 새로고침</button>
+  <button class="danger" onclick="resetQuantities()">♻️ 수량 초기화(0)</button>
+</div>
+
+<div class="page" id="page" style="padding: 10px; background: #fff;">
+
+  <h1 class="title">견 적 서</h1>
+
+  <div class="top-info">
+    <div class="top-info-cell">
+      <table>
+        <tr><td class="label">견적일자</td><td><input type="date" id="quoteDate"></td></tr>
+        <tr><td class="label">매장명</td>
+          <td><input type="text" id="storeNameInput" placeholder="업체명을 입력하세요"></td>
+        </tr>
+        <tr><td class="label">서비스명</td><td><input type="text" value="하이오더 외" readonly></td></tr>
+        <tr class="amount-row"><td class="label">견적금액<br>(VAT포함)</td><td class="value" id="topQuoteAmount">0원</td></tr>
+        <tr><td class="label">견적유효기간</td><td>견적 제출일로부터 30일</td></tr>
+      </table>
     </div>
-
-    <div class="top-actions">
-      <button class="btn secondary" id="btnReset">견적 초기화</button>
+    <div class="top-info-cell">
+      <table>
+        <tr><td class="label">사업자등록번호</td><td>102-81-42945</td></tr>
+        <tr><td class="label">회 사 명</td><td>주식회사 케이티</td></tr>
+        <tr><td class="label">대 표 자 명</td><td>김영섭</td></tr>
+        <tr><td class="label">주&nbsp;&nbsp;&nbsp;&nbsp;소</td><td style="font-size:11.5px; line-height:1.4; padding: 3px 8px;">경기도 성남시 분당구 불정로 90<br>(정자동 KT타워)</td></tr>
+        <tr><td class="label">업&nbsp;&nbsp;&nbsp;&nbsp;종</td><td>전기통신업 외</td></tr>
+        <tr>
+          <td class="label">담당자 / 연락처</td>
+          <td>
+            <select id="managerSelect" onchange="onManagerChange()">
+              <option value="김영훈 과장 / 010-8290-9971">김영훈 과장 / 010-8290-9971</option>
+              <option value="custom">직접입력</option>
+            </select>
+            <input type="text" id="managerCustomInput" placeholder="이름 직급 / 연락처 입력" style="display:none; margin-top:3px;">
+          </td>
+        </tr>
+      </table>
     </div>
-
-    <!-- 1) 결제 유형 -->
-    <div class="card">
-      <h3><span style="color:#17ab21"><b>결제 유형</b></span></h3>
-      <div class="row"><label><input type="radio" name="paytype" value="후불" checked> 후불형</label></div>
-      <div class="row">
-        <label><input type="radio" name="paytype" value="선불"> 선불형</label>
-        <p class="muted" style="margin:4px 0 0 20px">(+월 2,000원 / 일시불 +67,600원)</p>
-      </div>
-    </div>
-
-    <!-- 2) 메뉴판 -->
-    <div class="card" id="cardMenu">
-      <h3>
-        <div style="display:flex; flex-direction:column;">
-          <span><span style="color:#17ab21"><b>메뉴판</b></span></span>
-          <span class="badge">메뉴판 서비스이용료 <span id="badgeMenuSvcCnt">0</span>대 (월 15,000원/대)</span>
-        </div>
-      </h3>
-      <div class="row">
-        <label>
-          <div>하이오더 1</div>
-          <div class="muted">(3년 약정 기준 월 3,000원 <br>/ 일시불 108,000원)</div>
-        </label>
-        <input id="q_h1" class="qty" type="number" min="0" value="0">
-      </div>
-      <div class="row">
-        <label>
-          <div>하이오더 2</div>
-          <div class="muted">(3년 약정 기준 월 5,000원 <br>/ 일시불 170,000원)</div>
-        </label>
-        <input id="q_h2" class="qty" type="number" min="0" value="0">
-      </div>
-
-      <h4 class="muted" style="margin:8px 0 4px"><b>메뉴판 거치대</b></h4>
-      <div class="grid-checks" id="menuMounts">
-        <label class="check-item"><span>스탠드형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
-        <label class="check-item"><span>스탠드고정형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
-        <label class="check-item"><span>탁상형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
-        <label class="check-item"><span>탁상형2</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
-        <label class="check-item"><span>벽걸이고정형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
-        <label class="check-item"><span>벽걸이회전형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
-        <label class="check-item"><span>아일랜드</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
-      </div>
-      <p class="muted">※ 1개 체크 시 메뉴판 총 수량 전량자동입력, 2개 이상 체크 시 자동 균등배분 후 자유롭게 ± 조정 (합계 유지)</p>
-    </div>
-
-    <!-- 3) 알림판 -->
-    <div class="card" id="cardSign">
-      <h3>
-        <div style="display:flex; flex-direction:column;">
-          <span><span style="color:#18aa22"><b>알림판</b></span></span>
-          <span class="badge">알림판 서비스이용료 <span id="badgeSignSvcCnt">0</span>대 (월 15,000원/대)</span>
-        </div>
-      </h3>
-      <div class="row"><label><div>10인치(하이오더1)</div><div class="muted">(3년 약정 기준 월 3,000원 <br>/ 일시불 108,000원)</div></label><input id="q_s10_h1" class="qty" type="number" min="0" value="0"></div>
-      <div class="row"><label><div>10인치(하이오더2)</div><div class="muted">(3년 약정 기준 월 5,000원 <br>/ 일시불 170,000원)</div></label><input id="q_s10_h2" class="qty" type="number" min="0" value="0"></div>
-      <div class="row"><label><div>15인치 알림판</div><div class="muted">(3년 약정 기준 월 7,000원 <br>/ 일시불 237,000원)</div></label><input id="q_s15" class="qty" type="number" min="0" value="0"></div>
-
-      <h4 class="muted" style="margin:8px 0 4px"><b>알림판 거치대</b></h4>
-      <div class="grid-checks" id="signMounts">
-        <label class="check-item"><span>스탠드형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
-        <label class="check-item"><span>스탠드고정형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
-        <label class="check-item"><span>탁상형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
-        <label class="check-item"><span>탁상형2</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
-        <label class="check-item"><span>벽걸이고정형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
-        <label class="check-item"><span>벽걸이회전형</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
-        <label class="check-item"><span>아일랜드</span><span><input type="checkbox" class="mount-check"><input type="number" min="0" value="0" class="mount-qty"></span></label>
-      </div>
-      <p class="muted" style="text-align:center">※ 1개 체크 시 알림판 총 수량 전량자동입력,<br>2개 이상 체크 시 자동 균등배분 후 <br>자유롭게 ± 조정 (합계 유지)</p>
-    </div>
-
-    <!-- 4) 부자재 및 설치비 (할인 대상) -->
-    <div class="card">
-      <h3><span style="color:#19ae23"><b>부자재 및 설치비</b></span></h3>
-      <div class="row"><label>설치비용 <br><span class="muted">(260,000원/건)</span></label><input id="q_install" type="number" readonly value="0"></div>
-      <div class="row"><label>상시전원 <br><span class="muted">(48,500원/대)</span></label><input id="q_batt_main" type="number" min="0" value="0"></div>
-      <div class="row"><label>보조배터리 <br><span class="muted">(48,500원/대)</span></label><input id="q_batt_portable" type="number" min="0" value="0"></div>
-      <div class="row"><label>부자재 <br><span class="muted">(17,000원/대)</span></label><input id="q_parts" type="number" readonly value="0"></div>
-      <div class="row"><label>와이파이 AP<br><span class="muted">(100,000원)</span></label><input id="q_ap" type="number" value="1" readonly></div>
-      <div class="row"><label>증폭기<br><span class="muted">(97,000원)</span></label><input id="q_amp" type="number" value="1" readonly></div>
-      <p class="muted" style="text-align:center"><br>※ 위 5개 품목은 <b>초기 설치비 면제(할인)</b> 대상이며 요약표 합계는 0원으로 표시됩니다. <br>할인 금액은 ‘할인 금액 합계’에 반영됩니다.</p>
-    </div>
-
-    <!-- 5) 견적 요약 -->
-    <div class="card">
-      <h3><span style="color:#18b423"><b>견적 요약</b></span></h3>
-      <div class="table-wrap">
-        <table class="summary-table">
-          <thead>
-            <tr><th>품목</th><th>단가</th><th>수량</th><th>공급가</th><th>세액</th><th>합계(VAT포함)</th></tr>
-          </thead>
-          <tbody id="tbodyLines">
-            <tr><td colspan="6" style="text-align:center;color:#6b7280">수량을 입력하면 자동으로 계산됩니다.</td></tr>
-          </tbody>
-          <tfoot>
-            <tr><td id="tdMonthlyLabel">월이용료합계<br>VAT포함</td><td colspan="4"></td><td id="tdMonthly">0</td></tr>
-            <tr><td>일시불<br>합계</td><td colspan="4"></td><td id="tdOnetime">0</td></tr>
-            <tr><td>할인금액<br>합계</td><td colspan="4"></td><td id="tdDiscount">- 0</td></tr>
-            <tr><td>총 합계<br>월일시불-할인</td><td colspan="4"></td><td id="tdGrand">0</td></tr>
-          </tfoot>
-        </table>
-      </div>
-    </div>
-
-   
-      <div class="btnRow" style="margin-top:10px">
-        <a class="btn blue" href="https://tally.so/r/mKAP1k" target="_blank">견적서<br>신청하고<br>혜택상담</button>
-        <a class="btn kakao" href="http://pf.kakao.com/_xaXbrn" target="_blank">카카오채널 <br>추가하고<br>실시간채팅<br>상담받기</a>
-        <a class="btn green" href="http://kt-mns.com" target="_blank">KT<br>소상공인<br>홈페이지<br>방문하기</a>
-      </div>
-    </div>
-
   </div>
 
+  <div class="section-title">하이오더 서비스 견적 - 메뉴판</div>
+  <table class="items" data-group="g1">
+    <thead>
+      <tr>
+        <th style="width:28%">품목</th>
+        <th style="width:12%">약정</th>
+        <th style="width:14%">수량(EA)</th>
+        <th style="width:11%">단가</th>
+        <th style="width:14%">공급가액<br>(VAT별도)</th>
+        <th style="width:10%">세액</th>
+        <th style="width:11%">합계액<br>(VAT포함)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="7" class="group-label">a) 태블릿</td></tr>
+      <tr class="item-row device-row">
+        <td class="item-name">하이오더 2 단말기</td>
+        <td><input type="text" value="36개월"></td>
+        <td>
+          <div class="qty-box">
+            <button type="button" class="qty-btn" onclick="changeQty(this, -1)">-</button>
+            <input type="text" inputmode="numeric" class="qty-input device-qty" value="15">
+            <button type="button" class="qty-btn" onclick="changeQty(this, 1)">+</button>
+          </div>
+        </td>
+        <td><input type="text" class="price-input price" value="5,000" readonly></td>
+        <td class="supply">0</td><td class="tax">0</td><td class="total">0</td>
+      </tr>
+      <tr><td colspan="7" class="group-label">b) 카드리더기</td></tr>
+      <tr class="item-row reader-row">
+        <td class="item-name">카드리더기 종류</td>
+        <td>
+          <select class="reader-type" onchange="recalcAll()">
+            <option value="선불형(NICE)">선불형(NICE)</option>
+            <option value="후불형(그 외)">후불형(그 외)</option>
+          </select>
+        </td>
+        <td>
+          <div class="qty-box">
+            <button type="button" class="qty-btn" onclick="changeQty(this, -1)">-</button>
+            <input type="text" inputmode="numeric" class="qty-input reader-qty" value="0">
+            <button type="button" class="qty-btn" onclick="changeQty(this, 1)">+</button>
+          </div>
+        </td>
+        <td><input type="text" class="price-input price" value="2,000" readonly></td>
+        <td class="supply">0</td><td class="tax">0</td><td class="total">0</td>
+      </tr>
+      <tr><td colspan="7" class="group-label">c) 서비스이용료</td></tr>
+      <tr class="item-row service-row">
+        <td class="item-name">하이오더 서비스</td>
+        <td><input type="text" value="36개월"></td>
+        <td><input type="text" inputmode="numeric" class="qty-input service-qty" value="15" readonly></td>
+        <td><input type="text" class="price-input price" value="15,000" readonly></td>
+        <td class="supply">0</td><td class="tax">0</td><td class="total">0</td>
+      </tr>
+      <tr class="subtotal">
+        <td class="item-name" colspan="4">① 합계 (a+b+c)</td>
+        <td class="g-supply">0</td><td class="g-tax">0</td><td class="g-total">0</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ===================== 2. 알림판(주방) ===================== -->
+  <div class="section-title">알림판 (주방)</div>
+  <table class="items" data-group="g2">
+    <thead>
+      <tr>
+        <th style="width:28%">품목</th>
+        <th style="width:12%">약정</th>
+        <th style="width:14%">수량</th>
+        <th style="width:11%">단가</th>
+        <th style="width:14%">공급가액<br>(VAT별도)</th>
+        <th style="width:10%">세액</th>
+        <th style="width:11%">합계액<br>(VAT포함)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="7" class="group-label">a) 태블릿(단말기)</td></tr>
+      <tr class="item-row device-row">
+        <td class="item-name">알림판 10인치 (하이오더2)</td>
+        <td><input type="text" value="36개월"></td>
+        <td>
+          <div class="qty-box">
+            <button type="button" class="qty-btn" onclick="changeQty(this, -1)">-</button>
+            <input type="text" inputmode="numeric" class="qty-input device-qty" value="1">
+            <button type="button" class="qty-btn" onclick="changeQty(this, 1)">+</button>
+          </div>
+        </td>
+        <td><input type="text" class="price-input price" value="5,000" readonly></td>
+        <td class="supply">0</td><td class="tax">0</td><td class="total">0</td>
+      </tr>
+      <tr class="item-row device-row">
+        <td class="item-name">알림판 15인치</td>
+        <td><input type="text" value="36개월"></td>
+        <td>
+          <div class="qty-box">
+            <button type="button" class="qty-btn" onclick="changeQty(this, -1)">-</button>
+            <input type="text" inputmode="numeric" class="qty-input device-qty" value="1">
+            <button type="button" class="qty-btn" onclick="changeQty(this, 1)">+</button>
+          </div>
+        </td>
+        <td><input type="text" class="price-input price" value="7,000" readonly></td>
+        <td class="supply">0</td><td class="tax">0</td><td class="total">0</td>
+      </tr>
+      <tr><td colspan="7" class="group-label">b) 서비스이용료</td></tr>
+      <tr class="item-row service-row">
+        <td class="item-name">알림판(모니터) 서비스</td>
+        <td><input type="text" value="36개월"></td>
+        <td><input type="text" inputmode="numeric" class="qty-input service-qty" value="2" readonly></td>
+        <td><input type="text" class="price-input price" value="15,000" readonly></td>
+        <td class="supply">0</td><td class="tax">0</td><td class="total">0</td>
+      </tr>
+      <tr class="subtotal">
+        <td class="item-name" colspan="4">② 합계 (a+b)</td>
+        <td class="g-supply">0</td><td class="g-tax">0</td><td class="g-total">0</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ===================== 3. 웨이팅 솔루션 ===================== -->
+  <div class="section-title">웨이팅 솔루션</div>
+  <table class="items" data-group="g3">
+    <thead>
+      <tr>
+        <th style="width:28%">품목</th>
+        <th style="width:12%">약정</th>
+        <th style="width:14%">수량</th>
+        <th style="width:11%">단가</th>
+        <th style="width:14%">공급가액<br>(VAT별도)</th>
+        <th style="width:10%">세액</th>
+        <th style="width:11%">합계액<br>(VAT포함)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="7" class="group-label">a) 태블릿(단말기)</td></tr>
+      <tr class="item-row device-row">
+        <td class="item-name">10인치 블랙 (하이오더2)</td>
+        <td><input type="text" value="36개월"></td>
+        <td>
+          <div class="qty-box">
+            <button type="button" class="qty-btn" onclick="changeQty(this, -1)">-</button>
+            <input type="text" inputmode="numeric" class="qty-input device-qty" value="1">
+            <button type="button" class="qty-btn" onclick="changeQty(this, 1)">+</button>
+          </div>
+        </td>
+        <td><input type="text" class="price-input price" value="5,000" readonly></td>
+        <td class="supply">0</td><td class="tax">0</td><td class="total">0</td>
+      </tr>
+      <tr><td colspan="7" class="group-label">b) 서비스이용료</td></tr>
+      <tr class="item-row service-row">
+        <td class="item-name">웨이팅 솔루션</td>
+        <td><input type="text" value="36개월"></td>
+        <td><input type="text" inputmode="numeric" class="qty-input service-qty" value="1" readonly></td>
+        <td><input type="text" class="price-input price" value="15,000" readonly></td>
+        <td class="supply">0</td><td class="tax">0</td><td class="total">0</td>
+      </tr>
+      <tr><td colspan="7" class="group-label">c) 웨이팅 전용거치대 (멀티탭, 배송료 포함 / 제조사 사이트 별도구매)</td></tr>
+      <tr class="item-row etc-row">
+        <td class="item-name">전용거치대</td>
+        <td><input type="text" value="일시불"></td>
+        <td>
+          <div class="qty-box">
+            <button type="button" class="qty-btn" onclick="changeQty(this, -1)">-</button>
+            <input type="text" inputmode="numeric" class="qty-input" value="1">
+            <button type="button" class="qty-btn" onclick="changeQty(this, 1)">+</button>
+          </div>
+        </td>
+        <td><input type="text" class="price-input price" value="180,000" readonly></td>
+        <td class="supply">0</td><td class="tax">0</td><td class="total">0</td>
+      </tr>
+      <tr class="subtotal">
+        <td class="item-name" colspan="4">③ 합계 (a+b+c)</td>
+        <td class="g-supply">0</td><td class="g-tax">0</td><td class="g-total">0</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="grand-total">
+    <table>
+      <tr>
+        <td class="label">하이오더 합계 (①+②+③)</td>
+        <td class="value" id="haiorderTotal">0원</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ===================== 4. 설치비 및 부자재 ===================== -->
+  <div class="section-title">설치비 및 부자재</div>
+  <table class="items" data-group="g4">
+    <thead>
+      <tr>
+        <th style="width:24%">품목</th>
+        <th style="width:10%">할부</th>
+        <th style="width:8%">수량</th>
+        <th style="width:11%">단가</th>
+        <th style="width:13%">공급가액<br>(VAT별도)</th>
+        <th style="width:9%">세액</th>
+        <th style="width:13%">합계액<br>(VAT포함)</th>
+        <th style="width:12%">비고</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="item-row4 install-fee-row">
+        <td class="item-name">설치비용</td>
+        <td><input type="text" value="일시불"></td>
+        <td><input type="text" class="qty4 auto-device-qty" value="0" readonly></td>
+        <!-- [수정] 설치비용 단가칸 직접 수정 불가하도록 고정 (readonly) -->
+        <td><input type="text" class="price-input price4" id="installPriceInput" value="0" readonly></td>
+        <td class="supply4">0</td><td class="tax4">0</td><td class="total4">0</td>
+        <td rowspan="5" style="font-size:11px; text-align: center; vertical-align: middle; line-height: 1.6; padding: 5px;">
+          기본 25만원<br>+대당 1만원<br><span style="color:#c0392b; font-weight:bold;">최초 1회 면제</span><br>중도해지시 청구
+        </td>
+      </tr>
+      <tr class="item-row4">
+        <td class="item-name">배터리</td>
+        <td><input type="text" value="일시불"></td>
+        <td><input type="text" class="qty4 auto-device-qty" value="0" readonly></td>
+        <td><input type="text" class="price-input price4" value="17,300" readonly></td>
+        <td class="supply4">0</td><td class="tax4">0</td><td class="total4">0</td>
+      </tr>
+      <tr class="item-row4">
+        <td class="item-name">부자재 (거치대, 브라켓 등)</td>
+        <td><input type="text" value="일시불"></td>
+        <td><input type="text" class="qty4 auto-device-qty" value="0" readonly></td>
+        <td><input type="text" class="price-input price4" value="16,000" readonly></td>
+        <td class="supply4">0</td><td class="tax4">0</td><td class="total4">0</td>
+      </tr>
+      <tr class="item-row4">
+        <td class="item-name">와이파이 AP</td>
+        <td><input type="text" value="일시불"></td>
+        <td><input type="text" class="qty4" value="1" readonly></td>
+        <td><input type="text" class="price-input price4" value="59,000" readonly></td>
+        <td class="supply4">0</td><td class="tax4">0</td><td class="total4">0</td>
+      </tr>
+      <tr class="item-row4">
+        <td class="item-name">증폭기</td>
+        <td><input type="text" value="일시불"></td>
+        <td><input type="text" class="qty4" value="1" readonly></td>
+        <td><input type="text" class="price-input price4" value="0" readonly></td>
+        <td class="supply4">0</td><td class="tax4">0</td><td class="total4">0</td>
+      </tr>
+      <tr class="subtotal">
+        <td class="item-name" colspan="4">합계</td>
+        <td class="g-supply4">0</td><td class="g-tax4">0</td><td class="g-total4">0</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ===================== 5. 서비스요금 납부 ===================== -->
+  <div class="section-title">서비스요금 납부</div>
+  <table class="pay-table">
+    <thead><tr><th style="width:50%">품목</th><th style="width:20%">납부처</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td class="item-name">메뉴판 태블릿(단말기)</td><td>KT</td><td rowspan="5" style="text-align:left;font-size:10px;line-height:1.5;">
+        ※ 선불형 카드리더기 KT납부<br>
+        ※ 메뉴판/알림판 단말기 및 서비스이용료 KT납부<br>
+        ※ 웨이팅 거치대의 경우, 비즈나루 외 제조사 사이트에서 별도 구매
+      </td></tr>
+      <tr><td class="item-name">메뉴판 서비스이용료</td><td>KT</td></tr>
+      <tr><td class="item-name">메뉴판 선불형 카드리더기</td><td>KT</td></tr>
+      <tr><td class="item-name">알림판 태블릿(단말기)</td><td>KT</td></tr>
+      <tr><td class="item-name">알림판 서비스이용료</td><td>KT</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note-box">
+    <div class="note-title">[하이오더 상품 관련 비고]</div>
+    1. 본 견적서의 유효기간은 견적서 제출일로부터 30일입니다.<br>
+    2. 상기 견적서 중 KT 단말의 A/S 보증기간은 3년이며, 그 외 세부사항은 이용약관에 표기된 기준을 따릅니다.<br>
+    3. 하이오더 운영 및 POS 연동을 위한 KT 유무선통신 요금은 별도입니다.<br>
+    4. 일부 가맹점의 경우 설치 및 로봇연동 등의 예외사항으로 인한 비용이 발생할 수 있습니다. 가맹점별 추가적인 시설에 대한 연동비용은 현장 실사 후 추가될 수 있습니다.
+  </div>
+
+</div>
+
 <script>
-(function(){
-  const $=id=>document.getElementById(id);
-  const nkr=n=>Number(n||0).toLocaleString('ko-KR');
-  const num=id=>{const el=$(id); return el?Number(el.value||0):0};
-  const setNum=(id,v)=>{const el=$(id); if(el) el.value=Number(v||0)};
-  const TAX=0.1;
+// [천단위 콤마 서식 유지 함수]
+function formatWithComma(n){ 
+  return Number(String(n).replace(/[^\d]/g,'')).toLocaleString('ko-KR'); 
+}
+function won(n){ return Math.round(n).toLocaleString('ko-KR') + '원'; }
+function parseNum(str){ return parseFloat(String(str).replace(/,/g,'')) || 0; }
 
-  const PRICE={
-    monthly:{ h1:3000, h2:5000, s10_h1:3000, s10_h2:5000, s15:7000, menuSvc:15000, signSvc:15000 },
-    onetime:{ h1:108000, h2:170000, s10_h1:108000, s10_h2:170000, s15:237000, install:260000, battery:48500, parts:17000, ap:100000, amp:97000 }
-  };
-  const isPrepay=()=> (document.querySelector('input[name="paytype"]:checked')?.value==='선불');
-  const mPrice=(code)=>{ let v=PRICE.monthly[code]||0; if(isPrepay() && (code==='h1'||code==='h2')) v+=2000; return v; };
-  const oPrice=(code)=>{ let v=PRICE.onetime[code]||0; if(isPrepay() && (code==='h1'||code==='h2')) v+=67600; return v; };
+function setTodayDate(){
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  document.getElementById('quoteDate').value = `${yyyy}-${mm}-${dd}`;
+}
+setTodayDate();
 
-  function sectionTotal(section){
-    if(section==='menu') return num('q_h1')+num('q_h2');
-    if(section==='sign') return num('q_s10_h1')+num('q_s10_h2')+num('q_s15');
-    return 0;
+const storeInput = document.getElementById('storeNameInput');
+if(storeInput) {
+  storeInput.addEventListener('blur', ()=>{
+    let v = storeInput.value.trim();
+    if(v.length===0){ return; }
+    if(!v.endsWith('귀중')){ v = v + ' 귀중'; }
+    storeInput.value = v;
+  });
+}
+
+function onManagerChange(){
+  const sel = document.getElementById('managerSelect');
+  const customInput = document.getElementById('managerCustomInput');
+  if(sel.value === 'custom'){
+    customInput.style.display = 'block';
+    customInput.value = '';
+    customInput.focus();
+  } else {
+    customInput.style.display = 'none';
   }
-  function rows(section){
-    const box = (section==='menu'? $('menuMounts') : $('signMounts'));
-    return box ? Array.from(box.querySelectorAll('.check-item')) : [];
-  }
-  function checkedRows(section){ return rows(section).filter(r=> r.querySelector('.mount-check')?.checked); }
-  function sumQty(section){ return rows(section).reduce((s,r)=> s + Number(r.querySelector('.mount-qty').value||0), 0); }
+}
 
-  function distribute(section, autoCheck=false){
-    const total=sectionTotal(section);
-    const allRows = rows(section);
-    let list = checkedRows(section);
+function changeQty(btn, amount) {
+  const input = btn.parentNode.querySelector('input');
+  let currentQty = parseNum(input.value);
+  currentQty += amount;
+  if(currentQty < 0) currentQty = 0;
+  input.value = formatWithComma(currentQty);
+  recalcAll();
+}
 
-    if(autoCheck && total>0 && list.length===0 && allRows.length>0){
-      const firstCb = allRows[0].querySelector('.mount-check');
-      if(firstCb){ firstCb.checked = true; }
-      list = checkedRows(section);
-    }
-    if(list.length===0){
-      allRows.forEach(r=> r.querySelector('.mount-qty').value=0);
-      return;
-    }
-    if(list.length===1){
-      allRows.forEach(r=>{ if(!r.querySelector('.mount-check').checked) r.querySelector('.mount-qty').value=0; });
-      list[0].querySelector('.mount-qty').value=total;
-      return;
-    }
-    const base=Math.floor(total/list.length); let rem=total-base*list.length;
-    allRows.forEach(r=>{ if(!r.querySelector('.mount-check').checked) r.querySelector('.mount-qty').value=0; });
-    list.forEach(r=> r.querySelector('.mount-qty').value=base);
-    for(let i=0;i<list.length && rem>0;i++,rem--){
-      const inp=list[i].querySelector('.mount-qty'); inp.value=Number(inp.value)+1;
-    }
-  }
-
-  function rebalance(section,changed){
-    const total=sectionTotal(section);
-    const list=checkedRows(section);
-    if(list.length===0){ distribute(section, false); return; }
-    list.forEach(r=>{ const inp=r.querySelector('.mount-qty'); if(Number(inp.value)<0) inp.value=0; });
-    let cur=sumQty(section); if(cur===total) return;
-
-    const others=list.map(r=> r.querySelector('.mount-qty'));
-    const i=others.indexOf(changed); if(i>=0) others.splice(i,1);
-    if(others.length===0){ changed.value=total; return; }
-
-    if(cur>total){
-      let diff=cur-total;
-      for(const inp of others){
-        const can=Math.min(diff, Number(inp.value));
-        inp.value=Number(inp.value)-can; diff-=can; if(diff<=0) break;
-      }
-    }else{
-      let diff=total-cur, k=0;
-      while(diff>0){ const inp=others[k%others.length]; inp.value=Number(inp.value)+1; diff--; k++; }
-    }
-  }
-
-  function syncByTotals(){
-    const mTot=sectionTotal('menu'); const sTot=sectionTotal('sign');
-    $('badgeMenuSvcCnt').textContent=mTot; $('badgeSignSvcCnt').textContent=sTot;
-
-    setNum('q_install', mTot+sTot); setNum('q_parts', mTot+sTot);
-
-    const all=mTot+sTot; const m=num('q_batt_main'); const p=num('q_batt_portable');
-    if(m+p!==all){
-      const act=document.activeElement?.id;
-      if(act==='q_batt_portable') setNum('q_batt_main',Math.max(0,all-p));
-      else setNum('q_batt_portable',Math.max(0,all-m));
-    }
-  }
-
-  function addLine(tbody, name, unit, qty, discount=false){
-    const q=Number(qty||0); if(!q) return 0;
-    const u=Number(unit||0); const supply=u*q; const tax=Math.round(supply*TAX); const total=supply+tax;
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${name}${discount? ' <span class="muted">(할인)</span>':''}</td><td>${nkr(u)}</td><td>${q}</td><td>${nkr(supply)}</td><td>${nkr(tax)}</td><td>${discount? '0' : nkr(total)}</td>`;
-    tbody.appendChild(tr);
-    return total;
-  }
-
-  function render(){
-    syncByTotals();
-    const tbody=$('tbodyLines'); tbody.innerHTML='';
-    let monthly=0, onetime=0, discount=0;
-
-    const h1=num('q_h1'), h2=num('q_h2');
-    const s10h1=num('q_s10_h1'), s10h2=num('q_s10_h2'), s15=num('q_s15');
-
-    monthly+=addLine(tbody,'하이오더 1 (3년)', mPrice('h1'), h1);
-    monthly+=addLine(tbody,'하이오더 2 (3년)', mPrice('h2'), h2);
-    monthly+=addLine(tbody,'알림판 10인치 (하이오더1, 3년)', mPrice('s10_h1'), s10h1);
-    monthly+=addLine(tbody,'알림판 10인치 (하이오더2, 3년)', mPrice('s10_h2'), s10h2);
-    monthly+=addLine(tbody,'알림판 15인치 (3년)', mPrice('s15'), s15);
-    monthly+=addLine(tbody,'메뉴판 서비스이용료', mPrice('menuSvc'), h1+h2);
-    monthly+=addLine(tbody,'알림판 서비스이용료', mPrice('signSvc'), s10h1+s10h2+s15);
-
-    onetime+=addLine(tbody,'하이오더 1 (일시불)', oPrice('h1'), h1);
-    onetime+=addLine(tbody,'하이오더 2 (일시불)', oPrice('h2'), h2);
-    onetime+=addLine(tbody,'알림판 10인치 (하이오더1, 일시불)', oPrice('s10_h1'), s10h1);
-    onetime+=addLine(tbody,'알림판 10인치 (하이오더2, 일시불)', oPrice('s10_h2'), s10h2);
-    onetime+=addLine(tbody,'알림판 15인치 (일시불)', oPrice('s15'), s15);
-
-    const inst = addLine(tbody,'설치비용', oPrice('install'), num('q_install'), true);
-    const batt = addLine(tbody,'배터리', oPrice('battery'), num('q_batt_main')+num('q_batt_portable'), true);
-    const parts= addLine(tbody,'부자재', oPrice('parts'), num('q_parts'), true);
-    const ap   = addLine(tbody,'와이파이 AP', oPrice('ap'), num('q_ap'), true);
-    const amp  = addLine(tbody,'증폭기', oPrice('amp'), num('q_amp'), true);
-    onetime += inst + batt + parts + ap + amp;
-    discount += inst + batt + parts + ap + amp;
-
-    $('tdMonthly').textContent=nkr(monthly);
-    $('tdOnetime').textContent=nkr(onetime);
-    $('tdDiscount').textContent='- '+nkr(discount);
-    $('tdGrand').textContent=nkr(Math.max(0, monthly + onetime - discount));
-  }
-
-  // === Make Webhook으로 전송 ===
-  const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/12nbyh6gcmb7z1b1f5viuhwnmnmizlxk";
-
-  function gatherMounts(section){
-    return rows(section).map(r=>{
-      const name = r.querySelector('span')?.textContent?.trim() || '';
-      const checked = r.querySelector('.mount-check')?.checked || false;
-      const qty = Number(r.querySelector('.mount-qty')?.value || 0);
-      return { name, checked, qty };
+function attachCommaFormatting(){
+  document.querySelectorAll('.qty-input, .price-input, .qty4').forEach(inp=>{
+    inp.addEventListener('input', (e)=>{
+      const cursorFromEnd = inp.value.length - inp.selectionStart;
+      let raw = inp.value.replace(/[^\d]/g,'');
+      if(raw === ''){ raw = '0'; }
+      inp.value = formatWithComma(raw);
+      const pos = inp.value.length - cursorFromEnd;
+      inp.setSelectionRange(pos, pos);
     });
+  });
+}
+
+function recalcGroup(groupSelector){
+  const table = document.querySelector(groupSelector);
+  if(!table) return {total:0, deviceQty:0};
+
+  let deviceQty = 0;
+  table.querySelectorAll('.device-qty').forEach(inp=>{
+    deviceQty += parseNum(inp.value);
+  });
+
+  table.querySelectorAll('.service-qty').forEach(inp=>{
+    inp.value = formatWithComma(deviceQty);
+  });
+
+  let sumSupply=0, sumTax=0, sumTotal=0;
+  table.querySelectorAll('tr.item-row').forEach(row=>{
+    const qtyInput = row.querySelector('.qty-input');
+    const qty = qtyInput ? parseNum(qtyInput.value) : 0;
+    const price = parseNum(row.querySelector('.price').value);
+    const supply = qty*price;
+    const tax = Math.round(supply*0.1);
+    const total = supply+tax;
+    
+    // 천단위 콤마 표기 보장
+    row.querySelector('.supply').textContent = supply.toLocaleString('ko-KR');
+    row.querySelector('.tax').textContent = tax.toLocaleString('ko-KR');
+    row.querySelector('.total').textContent = total.toLocaleString('ko-KR');
+
+    sumSupply+=supply; sumTax+=tax; sumTotal+=total;
+  });
+  table.querySelector('.g-supply').textContent = sumSupply.toLocaleString('ko-KR');
+  table.querySelector('.g-tax').textContent = sumTax.toLocaleString('ko-KR');
+  table.querySelector('.g-total').textContent = sumTotal.toLocaleString('ko-KR');
+  return {total: sumTotal, deviceQty};
+}
+
+function recalcGroup4(totalDeviceQty){
+  const table = document.querySelector('[data-group="g4"]');
+  if(!table) return;
+  
+  const installPriceInput = document.getElementById('installPriceInput');
+  if(installPriceInput) {
+    const calcInstallPrice = 250000 + (10000 * totalDeviceQty);
+    installPriceInput.value = formatWithComma(calcInstallPrice);
   }
 
-  function buildPayload(){
-    render(); // 최신 합계 보장
-    return {
-      timestamp: new Date().toISOString(),
-      paytype: document.querySelector('input[name="paytype"]:checked')?.value || '후불',
-      // 개인정보 필드 제거(요청/문의만 보냄)
-      note: $('cust_note').value.trim(),
-      qty: {
-        menu: { h1: num('q_h1'), h2: num('q_h2') },
-        sign: { s10_h1: num('q_s10_h1'), s10_h2: num('q_s10_h2'), s15: num('q_s15') }
-      },
-      mounts: {
-        menu: gatherMounts('menu'),
-        sign: gatherMounts('sign')
-      },
-      fees: {
-        monthly: $('tdMonthly').textContent,
-        onetime: $('tdOnetime').textContent,
-        discount: $('tdDiscount').textContent,
-        grand: $('tdGrand').textContent
-      }
-    };
-  }
-
-  async function sendToMake(){
-    const btn = $('btnEmail');
-    const old = btn.innerHTML;
-    btn.disabled = true; btn.innerHTML = '전송 중...';
-    try{
-      const res = await fetch(MAKE_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildPayload())
-      });
-      if(!res.ok) throw new Error('Webhook 응답 오류: '+res.status);
-      alert('신청이 접수되었습니다. 담당자가 곧 연락드립니다.');
-    }catch(err){
-      console.error(err);
-      alert('전송 실패. 잠시 후 다시 시도해 주세요.');
-    }finally{
-      btn.disabled = false; btn.innerHTML = old;
+  document.querySelectorAll('.auto-device-qty').forEach(inp=>{
+    inp.value = formatWithComma(totalDeviceQty);
+  });
+  
+  let sumSupply=0, sumTax=0, sumTotal=0;
+  table.querySelectorAll('tr.item-row4').forEach(row=>{
+    const qty = parseNum(row.querySelector('.qty4').value);
+    const price = parseNum(row.querySelector('.price4').value);
+    
+    let supply = qty * price;
+    if(row.classList.contains('install-fee-row')) {
+      supply = price; 
     }
-  }
+    
+    const tax = Math.round(supply*0.1);
+    const total = supply+tax;
+    
+    // 천단위 콤마 표기 보장
+    row.querySelector('.supply4').textContent = supply.toLocaleString('ko-KR');
+    row.querySelector('.tax4').textContent = tax.toLocaleString('ko-KR');
+    row.querySelector('.total4').textContent = total.toLocaleString('ko-KR');
+    sumSupply+=supply; sumTax+=tax; sumTotal+=total;
+  });
+  table.querySelector('.g-supply4').textContent = sumSupply.toLocaleString('ko-KR');
+  table.querySelector('.g-tax4').textContent = sumTax.toLocaleString('ko-KR');
+  table.querySelector('.g-total4').textContent = sumTotal.toLocaleString('ko-KR');
+}
 
-  function wire(){
-    ['q_h1','q_h2','q_s10_h1','q_s10_h2','q_s15','q_batt_main','q_batt_portable']
-      .forEach(id=>{
-        const el=$(id);
-        if(el) el.addEventListener('input', ()=>{
-          distribute('menu', true);
-          distribute('sign', true);
-          render();
-        });
-      });
+function recalcAll(){
+  const r1 = recalcGroup('[data-group="g1"]');
+  const r2 = recalcGroup('[data-group="g2"]');
+  const r3 = recalcGroup('[data-group="g3"]');
+  const totalDeviceQty = r1.deviceQty + r2.deviceQty + r3.deviceQty;
+  recalcGroup4(totalDeviceQty);
+  const haiOrderTotal = r1.total + r2.total + r3.total;
+  
+  const hTotalEl = document.getElementById('haiorderTotal');
+  const tQuoteEl = document.getElementById('topQuoteAmount');
+  if(hTotalEl) hTotalEl.textContent = won(haiOrderTotal);
+  if(tQuoteEl) tQuoteEl.textContent = won(haiOrderTotal);
+}
 
-    document.querySelectorAll('input[name="paytype"]').forEach(r=> r.addEventListener('change', render));
+function resetQuantities(){
+  document.querySelectorAll('.device-qty, .reader-qty').forEach(inp=>{ inp.value = '0'; });
+  document.querySelectorAll('[data-group="g3"] .qty-input:not(.device-qty):not(.service-qty)').forEach(inp=>{ inp.value = '0'; });
+  recalcAll();
+}
 
-    function bindMount(section){
-      rows(section).forEach(row=>{
-        const cb=row.querySelector('.mount-check');
-        const qty=row.querySelector('.mount-qty');
-        cb.addEventListener('change', ()=>{ distribute(section, false); render(); });
-        qty.addEventListener('input', ()=>{ rebalance(section, qty); render(); });
-      });
-    }
-    bindMount('menu'); bindMount('sign');
+// [수정] 견적서 캔버스화 및 고해상도 PNG 이미지 저장 기능 함수
+function saveAsImage() {
+  const pageElement = document.getElementById('page');
+  
+  html2canvas(pageElement, {
+    scale: 2, // 2배 선명도 스케일링
+    useCORS: true,
+    backgroundColor: '#ffffff'
+  }).then(canvas => {
+    const link = document.createElement('a');
+    let storeName = document.getElementById('storeNameInput').value.trim() || "가맹점";
+    storeName = storeName.replace(" 귀중", "");
+    
+    link.download = `하이오더_견적서_${storeName}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }).catch(err => {
+    alert("이미지 파일 저장 오류: " + err);
+  });
+}
 
-    $('btnReset').addEventListener('click', ()=>{
-      document.querySelectorAll('input[type=number]').forEach(i=>{ if(!i.readOnly) i.value = 0; });
-      document.querySelector('input[name="paytype"][value="후불"]').checked = true;
-      ['menu','sign'].forEach(sec=> rows(sec).forEach(r=>{
-        r.querySelector('.mount-check').checked=false;
-        r.querySelector('.mount-qty').value=0;
-      }));
-      render();
-    });
-
-    $('btnEmail').addEventListener('click', sendToMake);
-    render();
-  }
-
-  document.addEventListener('DOMContentLoaded', wire);
-})();
+attachCommaFormatting();
+document.querySelectorAll('input, select').forEach(inp=>{
+  inp.addEventListener('input', recalcAll);
+  inp.addEventListener('change', recalcAll);
+});
+recalcAll();
 </script>
+
 </body>
 </html>
