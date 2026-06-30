@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>하이오더 상품 견적서</title>
-<!-- html2canvas 라이브러리 추가 (이미지 저장 기능용) -->
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <style>
   @page { size: A4; margin: 14mm 12mm; background-color: #ffffff; }
@@ -13,12 +12,24 @@
     color: #222;
     margin: 0;
     padding: 0;
-    background: #ffffff;
+    background: #e9e9e9;
   }
+  
   .page {
-    width: 100%;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 10px auto;
     background: #fff;
-    padding: 0;
+    padding: 14mm 12mm;
+    box-shadow: 0 0 8px rgba(0,0,0,0.25);
+    position: relative;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+  @media print {
+    body { background: #fff; }
+    .page { box-shadow: none; margin: 0; width: auto; min-height: auto; padding: 0; }
+    .no-print { display: none !important; }
   }
 
   h1.title {
@@ -48,7 +59,6 @@
     appearance: none;
   }
 
-  /* 고객 오퍼 입력 셀 전용 디자인 */
   .offer-container { display: flex; align-items: center; width: 100%; height: 100%; gap: 5px; }
   .offer-container input { width: 90px !important; text-align: right; font-weight: bold; padding-right: 2px; }
   .offer-total-label { font-size: 11px; color: #2c3e50; font-weight: 600; white-space: nowrap; }
@@ -63,9 +73,10 @@
   table.items thead th { background: #ecf0f1; font-weight: 700; height: 28px; }
   table.items td.item-name { text-align: left; padding-left: 8px; }
   table.items td.group-label { background: #f8f8f8; font-weight: 700; text-align: left; padding-left: 6px; height: 24px; }
+  
   table.items input, table.items select {
     width: 100%; border: none; text-align: center; font-size: 11.5px;
-    background: transparent; font-family: inherit; padding: 0; margin: 0;
+    background: transparent; font-family: inherit; padding: 0 2px; margin: 0;
   }
   table.items input:focus, table.items select:focus { background: #fff8d6; outline: 1px solid #f1c40f; }
   table.items input[readonly] { color: #555; background: #f5f5f5; }
@@ -73,7 +84,7 @@
   table.items tr.subtotal td.item-name { text-align: right; padding-right: 10px; }
 
   .qty-box { display: inline-flex; align-items: center; justify-content: center; width: 100%; gap: 2px; }
-  .qty-box input { width: 35px !important; text-align: center; font-weight: bold; }
+  .qty-box input { width: 35px !important; text-align: center; font-weight: bold; padding: 0 !important; }
   .qty-btn {
     width: 18px; height: 18px; font-size: 11px; font-weight: bold;
     cursor: pointer; border: 1px solid #ccc; background: #fcfcfc;
@@ -81,7 +92,11 @@
     padding: 0; user-select: none;
   }
   .qty-btn:hover { background: #eee; }
-  @media print { .qty-btn { display: none !important; } }
+  
+  .hide-for-photo { display: none !important; }
+
+  /* 캡처 시 텍스트 대체용 스타일 */
+  .temp-text-view { display: inline-block; width: 100%; text-align: center; font-size: 11.5px; font-weight: inherit; color: #222; }
 
   .grand-total { margin-top: 8px; text-align: right; }
   .grand-total table { border-collapse: collapse; font-size: 13px; margin-left: auto; }
@@ -101,7 +116,7 @@
   }
   .note-box .note-title { font-weight: 700; color: #333; margin-bottom: 2px; }
 
-  .toolbar { text-align: center; margin-bottom: 15px; padding: 10px; background: #f5f5f5; border-radius: 4px; }
+  .toolbar { max-width: 210mm; text-align: center; margin: 10px auto; padding: 10px; background: #f5f5f5; border-radius: 4px; box-shadow: 0 0 4px rgba(0,0,0,0.15); }
   .toolbar button {
     padding: 8px 18px; font-size: 13px; margin: 0 4px; border: 1px solid #2c3e50;
     background: #2c3e50; color: #fff; border-radius: 4px; cursor: pointer;
@@ -114,18 +129,17 @@
 </head>
 <body>
 
-<div class="toolbar">
+<div class="toolbar no-print">
   <button class="image-save" onclick="saveAsImage()">🖼 이미지로 저장</button>
   <button onclick="window.print()">🖨 인쇄 / PDF저장</button>
   <button class="secondary" onclick="recalcAll()">🔄 합계 새로고침</button>
   <button class="danger" onclick="resetQuantities()">♻️ 수량 초기화(0)</button>
 </div>
 
-<div class="page" id="page" style="padding: 10px; background: #fff;">
+<div class="page" id="page">
 
-  <h1 class="title">견 적 서</h1>
+  <h1 class="title">테이블오더 견적서</h1>
 
-  <!-- 상단 정보 테이블 (좌우 대칭 구조 개선) -->
   <div class="top-info">
     <div class="top-info-cell">
       <table>
@@ -136,7 +150,6 @@
         <tr><td class="label">서비스명</td><td><input type="text" value="하이오더 외" readonly></td></tr>
         <tr class="amount-row"><td class="label">견적금액<br>(VAT포함)</td><td class="value" id="topQuoteAmount">0원</td></tr>
         <tr><td class="label">견적유효기간</td><td>견적 제출일로부터 30일</td></tr>
-        <!-- 좌측 마지막 행 -->
         <tr>
           <td class="label">고객 오퍼</td>
           <td>
@@ -155,7 +168,6 @@
         <tr><td class="label">대 표 자 명</td><td>김영섭</td></tr>
         <tr><td class="label">주&nbsp;&nbsp;&nbsp;&nbsp;소</td><td style="font-size:11.5px; line-height:1.4; padding: 3px 8px;">경기도 성남시 분당구 불정로 90<br>(정자동 KT타워)</td></tr>
         <tr><td class="label">업&nbsp;&nbsp;&nbsp;&nbsp;종</td><td>전기통신업 외</td></tr>
-        <!-- 우측 마지막 행 (좌측 '고객 오퍼'행과 하단선 일치) -->
         <tr>
           <td class="label">담당자 / 연락처</td>
           <td>
@@ -190,9 +202,9 @@
         <td><input type="text" value="36개월"></td>
         <td>
           <div class="qty-box">
-            <button type="button" class="qty-btn" onclick="changeQty(this, -1)">-</button>
+            <button type="button" class="qty-btn no-print-target" onclick="changeQty(this, -1)">-</button>
             <input type="text" inputmode="numeric" class="qty-input device-qty" value="15">
-            <button type="button" class="qty-btn" onclick="changeQty(this, 1)">+</button>
+            <button type="button" class="qty-btn no-print-target" onclick="changeQty(this, 1)">+</button>
           </div>
         </td>
         <td><input type="text" class="price-input price" value="5,000" readonly></td>
@@ -209,9 +221,9 @@
         </td>
         <td>
           <div class="qty-box">
-            <button type="button" class="qty-btn" onclick="changeQty(this, -1)">-</button>
+            <button type="button" class="qty-btn no-print-target" onclick="changeQty(this, -1)">-</button>
             <input type="text" inputmode="numeric" class="qty-input reader-qty" value="0">
-            <button type="button" class="qty-btn" onclick="changeQty(this, 1)">+</button>
+            <button type="button" class="qty-btn no-print-target" onclick="changeQty(this, 1)">+</button>
           </div>
         </td>
         <td><input type="text" class="price-input price" value="2,000" readonly></td>
@@ -232,7 +244,6 @@
     </tbody>
   </table>
 
-  <!-- ===================== 2. 알림판(주방) ===================== -->
   <div class="section-title">알림판 (주방)</div>
   <table class="items" data-group="g2">
     <thead>
@@ -253,9 +264,9 @@
         <td><input type="text" value="36개월"></td>
         <td>
           <div class="qty-box">
-            <button type="button" class="qty-btn" onclick="changeQty(this, -1)">-</button>
+            <button type="button" class="qty-btn no-print-target" onclick="changeQty(this, -1)">-</button>
             <input type="text" inputmode="numeric" class="qty-input device-qty" value="1">
-            <button type="button" class="qty-btn" onclick="changeQty(this, 1)">+</button>
+            <button type="button" class="qty-btn no-print-target" onclick="changeQty(this, 1)">+</button>
           </div>
         </td>
         <td><input type="text" class="price-input price" value="5,000" readonly></td>
@@ -266,9 +277,9 @@
         <td><input type="text" value="36개월"></td>
         <td>
           <div class="qty-box">
-            <button type="button" class="qty-btn" onclick="changeQty(this, -1)">-</button>
+            <button type="button" class="qty-btn no-print-target" onclick="changeQty(this, -1)">-</button>
             <input type="text" inputmode="numeric" class="qty-input device-qty" value="1">
-            <button type="button" class="qty-btn" onclick="changeQty(this, 1)">+</button>
+            <button type="button" class="qty-btn no-print-target" onclick="changeQty(this, 1)">+</button>
           </div>
         </td>
         <td><input type="text" class="price-input price" value="7,000" readonly></td>
@@ -289,7 +300,6 @@
     </tbody>
   </table>
 
-  <!-- ===================== 3. 웨이팅 솔루션 ===================== -->
   <div class="section-title">웨이팅 솔루션</div>
   <table class="items" data-group="g3">
     <thead>
@@ -310,9 +320,9 @@
         <td><input type="text" value="36개월"></td>
         <td>
           <div class="qty-box">
-            <button type="button" class="qty-btn" onclick="changeQty(this, -1)">-</button>
+            <button type="button" class="qty-btn no-print-target" onclick="changeQty(this, -1)">-</button>
             <input type="text" inputmode="numeric" class="qty-input device-qty" value="1">
-            <button type="button" class="qty-btn" onclick="changeQty(this, 1)">+</button>
+            <button type="button" class="qty-btn no-print-target" onclick="changeQty(this, 1)">+</button>
           </div>
         </td>
         <td><input type="text" class="price-input price" value="5,000" readonly></td>
@@ -332,9 +342,9 @@
         <td><input type="text" value="일시불"></td>
         <td>
           <div class="qty-box">
-            <button type="button" class="qty-btn" onclick="changeQty(this, -1)">-</button>
+            <button type="button" class="qty-btn no-print-target" onclick="changeQty(this, -1)">-</button>
             <input type="text" inputmode="numeric" class="qty-input" value="1">
-            <button type="button" class="qty-btn" onclick="changeQty(this, 1)">+</button>
+            <button type="button" class="qty-btn no-print-target" onclick="changeQty(this, 1)">+</button>
           </div>
         </td>
         <td><input type="text" class="price-input price" value="180,000" readonly></td>
@@ -356,7 +366,6 @@
     </table>
   </div>
 
-  <!-- ===================== 4. 설치비 및 부자재 ===================== -->
   <div class="section-title">설치비 및 부자재</div>
   <table class="items" data-group="g4">
     <thead>
@@ -418,7 +427,6 @@
     </tbody>
   </table>
 
-  <!-- ===================== 5. 서비스요금 납부 ===================== -->
   <div class="section-title">서비스요금 납부</div>
   <table class="pay-table">
     <thead><tr><th style="width:50%">품목</th><th style="width:20%">납부처</th><th>비고</th></tr></thead>
@@ -483,7 +491,6 @@ function onManagerChange(){
   }
 }
 
-// 수량 조절
 function changeQty(btn, amount) {
   const input = btn.parentNode.querySelector('input');
   let currentQty = parseNum(input.value);
@@ -618,13 +625,61 @@ function resetQuantities(){
   recalcAll();
 }
 
+// [★ 버그 완전 해결 핵심 스크립트] 
+// 캡처 순간에만 input 상자들을 일반 텍스트 글자로 치환하여 html2canvas 특유의 내부 짤림 버그를 원천 봉쇄합니다.
 function saveAsImage() {
   const pageElement = document.getElementById('page');
+  
+  // 1. 플러스/마이너스 버튼 일시 차단
+  document.querySelectorAll('.no-print-target').forEach(btn => btn.classList.add('hide-for-photo'));
+
+  // 2. 모든 input, select 요소를 찾아 실제 값 기반의 임시 div(텍스트) 객체로 체인지하여 강제 삽입
+  const originalInputs = pageElement.querySelectorAll('input, select');
+  const savedStates = [];
+
+  originalInputs.forEach((el, index) => {
+    // 날짜 선택 버튼이나 오퍼 총합 레이블 등은 통과하고, 테이블 내부의 인풋값 위주 처리
+    if(el.classList.contains('no-print-target') || el.type === 'button') return;
+
+    let displayVal = el.value;
+    
+    // Select 박스의 경우 현재 선택된 텍스트 추출
+    if(el.tagName.toLowerCase() === 'select') {
+      displayVal = el.options[el.selectedIndex].text;
+    }
+
+    // 임시 텍스트 객체 생성
+    const tempSpan = document.createElement('span');
+    tempSpan.className = 'temp-text-view';
+    tempSpan.textContent = displayVal || ' ';
+    
+    // 원본은 잠시 숨기고 임시 텍스트 노드 붙이기
+    el.style.display = 'none';
+    el.parentNode.insertBefore(tempSpan, el);
+
+    // 나중에 되돌리기 위해 상태값 백업
+    savedStates.push({ original: el, placeholder: tempSpan });
+  });
+
+  // 3. 치환된 상태로 정밀 캡처 진행
   html2canvas(pageElement, {
-    scale: 2,
+    scale: 2.5,             
     useCORS: true,
-    backgroundColor: '#ffffff'
+    backgroundColor: '#ffffff',
+    width: 794,            
+    scrollX: 0,
+    scrollY: 0,
+    windowWidth: 900      
   }).then(canvas => {
+    // 4. 촬영 완료 후 즉시 임시 텍스트를 제거하고 기존 인풋창 원복
+    savedStates.forEach(state => {
+      state.placeholder.remove();
+      state.original.style.display = '';
+    });
+
+    document.querySelectorAll('.no-print-target').forEach(btn => btn.classList.remove('hide-for-photo'));
+
+    // 5. 다운로드 가동
     const link = document.createElement('a');
     let storeName = document.getElementById('storeNameInput').value.trim() || "가맹점";
     storeName = storeName.replace(" 귀중", "");
@@ -633,7 +688,13 @@ function saveAsImage() {
     link.href = canvas.toDataURL('image/png');
     link.click();
   }).catch(err => {
-    alert("이미지 파일 저장 오류: " + err);
+    // 에러 발생 시 리셋 안전장치
+    savedStates.forEach(state => {
+      state.placeholder.remove();
+      state.original.style.display = '';
+    });
+    document.querySelectorAll('.no-print-target').forEach(btn => btn.classList.remove('hide-for-photo'));
+    alert("이미지 파일 생성 중 오류가 발생했습니다: " + err);
   });
 }
 
