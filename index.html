@@ -48,6 +48,11 @@
     appearance: none;
   }
 
+  /* 고객 오퍼 입력 셀 전용 디자인 */
+  .offer-container { display: flex; align-items: center; width: 100%; height: 100%; gap: 5px; }
+  .offer-container input { width: 90px !important; text-align: right; font-weight: bold; padding-right: 2px; }
+  .offer-total-label { font-size: 11px; color: #2c3e50; font-weight: 600; white-space: nowrap; }
+
   .section-title {
     background: #2c3e50; color: #fff; padding: 6px 10px; font-size: 13.5px;
     font-weight: 700; margin-top: 18px; border-radius: 3px 3px 0 0;
@@ -120,6 +125,7 @@
 
   <h1 class="title">견 적 서</h1>
 
+  <!-- 상단 정보 테이블 (좌우 대칭 구조 개선) -->
   <div class="top-info">
     <div class="top-info-cell">
       <table>
@@ -130,6 +136,16 @@
         <tr><td class="label">서비스명</td><td><input type="text" value="하이오더 외" readonly></td></tr>
         <tr class="amount-row"><td class="label">견적금액<br>(VAT포함)</td><td class="value" id="topQuoteAmount">0원</td></tr>
         <tr><td class="label">견적유효기간</td><td>견적 제출일로부터 30일</td></tr>
+        <!-- 좌측 마지막 행 -->
+        <tr>
+          <td class="label">고객 오퍼</td>
+          <td>
+            <div class="offer-container">
+              <input type="text" id="offerPriceInput" class="price-input" value="0">원 
+              <span class="offer-total-label" id="offerTotalText">(총합계: 0원)</span>
+            </div>
+          </td>
+        </tr>
       </table>
     </div>
     <div class="top-info-cell">
@@ -139,6 +155,7 @@
         <tr><td class="label">대 표 자 명</td><td>김영섭</td></tr>
         <tr><td class="label">주&nbsp;&nbsp;&nbsp;&nbsp;소</td><td style="font-size:11.5px; line-height:1.4; padding: 3px 8px;">경기도 성남시 분당구 불정로 90<br>(정자동 KT타워)</td></tr>
         <tr><td class="label">업&nbsp;&nbsp;&nbsp;&nbsp;종</td><td>전기통신업 외</td></tr>
+        <!-- 우측 마지막 행 (좌측 '고객 오퍼'행과 하단선 일치) -->
         <tr>
           <td class="label">담당자 / 연락처</td>
           <td>
@@ -359,7 +376,6 @@
         <td class="item-name">설치비용</td>
         <td><input type="text" value="일시불"></td>
         <td><input type="text" class="qty4 auto-device-qty" value="0" readonly></td>
-        <!-- [수정] 설치비용 단가칸 직접 수정 불가하도록 고정 (readonly) -->
         <td><input type="text" class="price-input price4" id="installPriceInput" value="0" readonly></td>
         <td class="supply4">0</td><td class="tax4">0</td><td class="total4">0</td>
         <td rowspan="5" style="font-size:11px; text-align: center; vertical-align: middle; line-height: 1.6; padding: 5px;">
@@ -430,7 +446,6 @@
 </div>
 
 <script>
-// [천단위 콤마 서식 유지 함수]
 function formatWithComma(n){ 
   return Number(String(n).replace(/[^\d]/g,'')).toLocaleString('ko-KR'); 
 }
@@ -468,6 +483,7 @@ function onManagerChange(){
   }
 }
 
+// 수량 조절
 function changeQty(btn, amount) {
   const input = btn.parentNode.querySelector('input');
   let currentQty = parseNum(input.value);
@@ -486,17 +502,23 @@ function attachCommaFormatting(){
       inp.value = formatWithComma(raw);
       const pos = inp.value.length - cursorFromEnd;
       inp.setSelectionRange(pos, pos);
+      recalcAll();
     });
   });
 }
 
 function recalcGroup(groupSelector){
   const table = document.querySelector(groupSelector);
-  if(!table) return {total:0, deviceQty:0};
+  if(!table) return {total:0, deviceQty:0, firstRowQty:0};
 
   let deviceQty = 0;
-  table.querySelectorAll('.device-qty').forEach(inp=>{
-    deviceQty += parseNum(inp.value);
+  let firstRowQty = 0;
+  
+  const devInputs = table.querySelectorAll('.device-qty');
+  devInputs.forEach((inp, idx)=>{
+    const val = parseNum(inp.value);
+    deviceQty += val;
+    if(idx === 0) firstRowQty = val; 
   });
 
   table.querySelectorAll('.service-qty').forEach(inp=>{
@@ -512,7 +534,6 @@ function recalcGroup(groupSelector){
     const tax = Math.round(supply*0.1);
     const total = supply+tax;
     
-    // 천단위 콤마 표기 보장
     row.querySelector('.supply').textContent = supply.toLocaleString('ko-KR');
     row.querySelector('.tax').textContent = tax.toLocaleString('ko-KR');
     row.querySelector('.total').textContent = total.toLocaleString('ko-KR');
@@ -522,7 +543,7 @@ function recalcGroup(groupSelector){
   table.querySelector('.g-supply').textContent = sumSupply.toLocaleString('ko-KR');
   table.querySelector('.g-tax').textContent = sumTax.toLocaleString('ko-KR');
   table.querySelector('.g-total').textContent = sumTotal.toLocaleString('ko-KR');
-  return {total: sumTotal, deviceQty};
+  return {total: sumTotal, deviceQty, firstRowQty};
 }
 
 function recalcGroup4(totalDeviceQty){
@@ -552,7 +573,6 @@ function recalcGroup4(totalDeviceQty){
     const tax = Math.round(supply*0.1);
     const total = supply+tax;
     
-    // 천단위 콤마 표기 보장
     row.querySelector('.supply4').textContent = supply.toLocaleString('ko-KR');
     row.querySelector('.tax4').textContent = tax.toLocaleString('ko-KR');
     row.querySelector('.total4').textContent = total.toLocaleString('ko-KR');
@@ -563,10 +583,23 @@ function recalcGroup4(totalDeviceQty){
   table.querySelector('.g-total4').textContent = sumTotal.toLocaleString('ko-KR');
 }
 
+function calcOfferTotal(menuTabletQty) {
+  const offerPriceInput = document.getElementById('offerPriceInput');
+  const offerTotalText = document.getElementById('offerTotalText');
+  if(!offerPriceInput || !offerTotalText) return;
+
+  const offerUnitPrice = parseNum(offerPriceInput.value);
+  const totalOfferPrice = offerUnitPrice * menuTabletQty;
+  offerTotalText.textContent = `(총합계: ${totalOfferPrice.toLocaleString('ko-KR')}원)`;
+}
+
 function recalcAll(){
   const r1 = recalcGroup('[data-group="g1"]');
   const r2 = recalcGroup('[data-group="g2"]');
   const r3 = recalcGroup('[data-group="g3"]');
+  
+  calcOfferTotal(r1.firstRowQty);
+
   const totalDeviceQty = r1.deviceQty + r2.deviceQty + r3.deviceQty;
   recalcGroup4(totalDeviceQty);
   const haiOrderTotal = r1.total + r2.total + r3.total;
@@ -580,15 +613,15 @@ function recalcAll(){
 function resetQuantities(){
   document.querySelectorAll('.device-qty, .reader-qty').forEach(inp=>{ inp.value = '0'; });
   document.querySelectorAll('[data-group="g3"] .qty-input:not(.device-qty):not(.service-qty)').forEach(inp=>{ inp.value = '0'; });
+  const offerPriceInput = document.getElementById('offerPriceInput');
+  if(offerPriceInput) offerPriceInput.value = '0';
   recalcAll();
 }
 
-// [수정] 견적서 캔버스화 및 고해상도 PNG 이미지 저장 기능 함수
 function saveAsImage() {
   const pageElement = document.getElementById('page');
-  
   html2canvas(pageElement, {
-    scale: 2, // 2배 선명도 스케일링
+    scale: 2,
     useCORS: true,
     backgroundColor: '#ffffff'
   }).then(canvas => {
